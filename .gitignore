@@ -1,0 +1,35 @@
+# --- Data: never committed (spec §5.5) ---
+# Everything under data/ is ignored except the placeholder.
+data/*
+!data/.gitkeep
+# IMR determinations, wherever they land
+*[Ii][Mm][Rr]*.csv
+*[Ii][Mm][Rr]*.xlsx
+*[Ii][Mm][Rr]*.parquet
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Agent files: private, never committed ---
+CLAUDE.md
+.claude/
+
+# --- Notebooks ---
+.ipynb_checkpoints/
+
+# --- Python / tooling ---
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# --- OS ---
+.DS_Store
