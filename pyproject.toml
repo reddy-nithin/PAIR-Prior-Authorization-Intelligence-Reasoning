@@ -6,12 +6,20 @@ readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Nithin Reddy" }]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pandas>=3.0.6",
+    "pydantic>=2",
+    "pyyaml>=6.0.3",
+]
 
 [dependency-groups]
 dev = [
+    "jupyter>=1.1.1",
+    "matplotlib>=3.11.2",
+    "pandas-stubs>=3.0.5.260914",
     "pytest>=8",
     "pytest-cov>=5",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 
 [build-system]
@@ -24,6 +32,10 @@ packages = ["src/pair"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "mcd: needs the MCD export in data/raw/mcd (run `make data`); skipped if absent",
+    "imr: needs the IMR CSV in data/raw/imr (run `make data`); skipped if absent",
+]
 
 [tool.coverage.run]
 source = ["src/pair"]

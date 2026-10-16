@@ -6,6 +6,8 @@ data/*
 *[Ii][Mm][Rr]*.csv
 *[Ii][Mm][Rr]*.xlsx
 *[Ii][Mm][Rr]*.parquet
+# ...except the fake, hand-written IMR test fixture (no real rows)
+!tests/fixtures/imr/*.csv
 
 # --- Secrets ---
 .env

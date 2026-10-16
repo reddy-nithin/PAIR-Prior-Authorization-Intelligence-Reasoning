@@ -26,6 +26,8 @@ The baseline plan documents (`docs/blueprint-v2.md`, `docs/insurance-companion.m
 | 0005 | Scope FHIR work to CDS Hooks CRD only (not full Da Vinci PAS) | Accepted | 2026-04-21 |
 | 0006 | Pivot to patient-side Appeal Copilot (PAIR v2) | Accepted | 2026-10-13 |
 | 0007 | Bayes-style strength score with an explanation panel | Accepted | 2026-10-15 |
+| 0008 | Rule expression language for policy checklists | Accepted | 2026-10-15 |
+| 0009 | Data-layer dependencies for contracts, policies and IMR | Accepted | 2026-10-15 |
 
 ## Template
 

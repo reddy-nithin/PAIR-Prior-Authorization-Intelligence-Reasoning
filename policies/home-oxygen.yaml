@@ -1,0 +1,74 @@
+# Home oxygen therapy, Groups I and II (initial coverage, resting and Group II tests).
+# Clauses are copied verbatim (whitespace-normalized) from the CMS MCD CSV export.
+# Scope note: Group I sleep and exercise testing and Group III are not modeled yet.
+id: home-oxygen
+title: Home oxygen therapy and equipment
+sources:
+  - type: NCD
+    id: "240.2"
+    title: Home Use of Oxygen
+    url: https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=169&ncdver=2
+    version: "2"
+    retrieved: 2026-10-15
+  - type: LCD
+    id: L33797
+    title: Oxygen and Oxygen Equipment
+    url: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=33797&ver=50
+    version: "50"
+    retrieved: 2026-10-15
+criteria:
+  - id: ordered_and_evaluated
+    text: Your treating practitioner ordered the oxygen test, reviewed it, and it was done when you needed oxygen
+    clause: >-
+      The treating practitioner has ordered and evaluated the results of a qualifying blood gas
+      study performed at the time of need
+    source_id: L33797
+    evidence_type: encounter
+    variables: {practitioner_ordered_and_reviewed: bool, tested_at_time_of_need: bool}
+    rule: "practitioner_ordered_and_reviewed and tested_at_time_of_need"
+    critical: true
+  - id: qualified_tester
+    text: The test was done by your practitioner or a qualified lab, not by the oxygen supplier
+    clause: >-
+      The qualifying blood gas study was performed by a treating practitioner or by a qualified
+      provider or supplier of laboratory services
+    source_id: L33797
+    evidence_type: lab_value
+    variables: {tested_by_qualified_provider: bool}
+    rule: "tested_by_qualified_provider"
+    critical: false
+  - id: group1_blood_gas
+    text: "Group I: oxygen level at rest on room air of PO2 55 or less, or saturation 88% or less"
+    clause: >-
+      An arterial PO2 at or below 55 mm Hg or an arterial oxygen saturation at or below 88 percent
+      taken at rest (awake) while breathing room air
+    source_id: L33797
+    evidence_type: lab_value
+    variables: {pao2: number, spo2: number, at_rest_on_room_air: bool}
+    rule: "at_rest_on_room_air and ((pao2 is not None and pao2 <= 55) or (spo2 is not None and spo2 <= 88))"
+    critical: false
+  - id: group2_blood_gas
+    text: "Group II: PO2 56 to 59 or saturation 89%, plus swelling from heart failure, pulmonary hypertension, or a high hematocrit"
+    clause: >-
+      Group II criteria include all of the following: An arterial PO2 of 56-59 mm Hg or an arterial
+      blood oxygen saturation of 89 percent; and, Any of the following: Dependent edema suggesting
+      congestive heart failure; or, Pulmonary hypertension or cor pulmonale, determined by
+      measurement of pulmonary artery pressure, gated blood pool scan, echocardiogram, or "P"
+      pulmonale on EKG (P wave greater than 3 mm in standard leads II, III, or AVF); or,
+      Erythrocythemia with a hematocrit greater than 56 percent.
+    source_id: L33797
+    evidence_type: lab_value
+    variables: {pao2: number, spo2: number, group2_conditions: list}
+    rule: "((pao2 is not None and 56 <= pao2 <= 59) or spo2 == 89) and len(group2_conditions) > 0"
+    critical: false
+  - id: home_benefit
+    text: Your practitioner expects oxygen at home to improve your condition
+    clause: >-
+      The provision of oxygen and oxygen equipment in the home setting will improve the
+      beneficiary’s condition.
+    source_id: L33797
+    evidence_type: encounter
+    variables: {expected_to_improve: bool}
+    rule: "expected_to_improve"
+    critical: false
+logic: "ordered_and_evaluated and qualified_tester and (group1_blood_gas or group2_blood_gas) and home_benefit"

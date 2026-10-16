@@ -1,5 +1,6 @@
 """Repo hygiene: private, agent and data files must never be committable."""
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -24,6 +25,7 @@ MUST_BE_TRACKABLE: list[str] = [
     "data/.gitkeep",
     ".env.example",
     "policies/pap-osa.yaml",
+    "tests/fixtures/imr/fake_imr.csv",
 ]
 
 
@@ -55,3 +57,19 @@ def test_private_and_data_paths_are_ignored(repo_root: Path, relative_path: str)
 def test_project_paths_are_trackable(repo_root: Path, relative_path: str) -> None:
     """Source, config and placeholder files stay committable."""
     assert not is_git_ignored(repo_root, relative_path), f"{relative_path} is ignored"
+
+
+def notebook_paths(repo_root: Path) -> list[Path]:
+    """Return every notebook under ``notebooks/``, skipping checkpoints."""
+    return sorted(p for p in (repo_root / "notebooks").rglob("*.ipynb") if ".ipynb_checkpoints" not in p.parts)
+
+
+def test_notebooks_have_no_outputs(repo_root: Path) -> None:
+    """Notebook outputs could carry data rows; strip them with `make strip-notebooks`."""
+    dirty = []
+    for path in notebook_paths(repo_root):
+        cells = json.loads(path.read_text(encoding="utf-8"))["cells"]
+        code_cells = [c for c in cells if c["cell_type"] == "code"]
+        if any(c.get("outputs") or c.get("execution_count") is not None for c in code_cells):
+            dirty.append(path.name)
+    assert not dirty, f"notebooks with outputs: {dirty} (run `make strip-notebooks`)"

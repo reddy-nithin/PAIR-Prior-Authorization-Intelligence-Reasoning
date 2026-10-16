@@ -1,0 +1,30 @@
+# Fake policy for loader tests. Not a real coverage rule.
+id: fake-device
+title: Fake device policy
+sources:
+  - type: LCD
+    id: L99001
+    title: Fake Device Policy
+    url: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=99001&ver=3
+    version: "3"
+    retrieved: 2026-10-15
+context:
+  initial: bool
+criteria:
+  - id: ahi_threshold
+    text: AHI at least 15
+    clause: "AHI ≥ 15 events per hour"
+    source_id: L99001
+    evidence_type: lab_value
+    variables: {ahi: number}
+    rule: "ahi >= 15"
+    critical: true
+  - id: f2f_visit
+    text: Face-to-face visit before the test
+    clause: "Face–to–face visit"
+    source_id: L99001
+    evidence_type: encounter
+    variables: {f2f_date: date, test_date: date}
+    rule: "f2f_date is not None and days_between(f2f_date, test_date) >= 0"
+    critical: false
+logic: "f2f_visit and ahi_threshold and (initial or True)"

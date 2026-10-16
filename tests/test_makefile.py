@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-ALL_TARGETS: list[str] = ["setup", "data", "demo", "eval", "test"]
-NOT_BUILT_TARGETS: list[str] = ["data", "demo", "eval"]
+ALL_TARGETS: list[str] = ["setup", "data", "data-mcd", "data-imr", "strip-notebooks", "demo", "eval", "test"]
+NOT_BUILT_TARGETS: list[str] = ["demo", "eval"]
 
 
 def run_make(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]:

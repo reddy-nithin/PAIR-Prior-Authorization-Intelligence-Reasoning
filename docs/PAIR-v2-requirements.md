@@ -41,7 +41,7 @@ Prior authorization (PA) is the insurer's permission slip. Before a plan pays fo
 | HealthCare.gov in-network denied claims appealed | under 0.2% | 2021 | [KFF ACA claims brief](https://www.kff.org/private-insurance/issue-brief/claims-denials-and-appeals-in-aca-marketplace-plans/) |
 | MA denials that met Medicare coverage rules (OIG sample of 250 PA denials, 15 largest MAOs) | "sometimes" denied despite meeting rules; see report for rates | 2019 sample | [HHS-OIG OEI-09-18-00260](https://oig.hhs.gov/reports/all/2022/some-medicare-advantage-organization-denials-of-prior-authorization-requests-raise-concerns-about-beneficiary-access-to-medically-necessary-care) |
 
-> **Correction to earlier notes.** The Hack-a-Roo memo and the Insider's Guide quote "67% overturned (KFF, 2025)". The latest KFF figure we could verify is **81.7% (2023 data)**. "Fewer than 1% appeal" comes from ACA Marketplace claims data, not MA. Use the table above in the pitch. The OIG "13%" figure still needs to be confirmed from the PDF before we cite it.
+> **Correction to earlier notes.** The Hack-a-Roo memo and the Insider's Guide quote "67% overturned (KFF, 2025)". The latest KFF figure we could verify is **81.7% (2023 data)**. "Fewer than 1% appeal" comes from ACA Marketplace claims data, not MA. Use the table above in the pitch. The OIG "13%" figure is confirmed (OEI-09-18-00260, page 2: 13 percent of denied prior authorization requests met Medicare coverage rules).
 
 **Why now: three regulatory shifts.**
 
@@ -519,13 +519,13 @@ gantt
 
 ## 15. Open questions
 
-1. Exact LCD IDs and current text for the three policies (verify in MCD, week 1).
-2. IMR data dictionary: actual column names and row count.
-3. Fight Health Insurance repo license and reusable IMR tools.
+1. ~~Exact LCD IDs and current text for the three policies (verify in MCD, week 1).~~ Answered 2026-10-15 from the MCD export dated 2026-10-12: NCD 240.4 v3 + LCD L33718 v52 (PAP), NCD 240.2 v2 + LCD L33797 v50 (home oxygen), and WPS LCD L38841 v20 for facet joints. Clauses are quoted verbatim in `policies/*.yaml`, and a test checks them against the export.
+2. ~~IMR data dictionary: actual column names and row count.~~ Answered 2026-10-15: 42,749 rows, 14 columns, report years 2001 to 2026, 52.5% overturned. The portal's dictionary (2020) is stale; the real columns, roles and leakage rules are in `docs/data/imr-schema.md`. The "IMR type" in §5.4 is the `Type` column; `IMRType` is Standard vs Expedited. `DaysToReview` and `DaysToAdopt` are post-decision and excluded from features.
+3. ~~Fight Health Insurance repo license and reusable IMR tools.~~ Answered 2026-10-15: mostly Apache 2.0 (some subfolders carry their own licenses). Its IMR ingest is tied to Django models and there is no `dataset_tools`, so PAIR uses its own small loader and copies no code.
 4. Hack-a-Roo rules: confirm public datasets and pre-written docs are fine (2026-10-16 Q&A).
 5. Dr. Uddin: confirm the mentor role and agreement on AMIA 2027 framing.
 6. ~~Strength-score combination: how to merge the IMR base rate with checklist completeness (simple Bayes-style adjustment vs a small learned model on synthetic cases).~~ Decided 2026-10-15: Bayes-style adjustment plus an explanation panel. See ADR-0007.
-7. Confirm the OIG report's denial-rate figure from the PDF before citing a number.
+7. ~~Confirm the OIG report's denial-rate figure from the PDF before citing a number.~~ Answered 2026-10-15 from OEI-09-18-00260, page 2: "among the prior authorization requests that MAOs denied, 13 percent met Medicare coverage rules". Page 3 gives 18 percent for denied payment requests.
 
 ---
 

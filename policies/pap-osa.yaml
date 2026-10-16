@@ -1,0 +1,67 @@
+# PAP devices (E0601) for obstructive sleep apnea.
+# Clauses are copied verbatim (whitespace-normalized) from the CMS MCD CSV export.
+# Rule language: ADR-0008. `critical` drives abstention: ADR-0007.
+id: pap-osa
+title: Positive airway pressure (PAP) devices for obstructive sleep apnea
+sources:
+  - type: NCD
+    id: "240.4"
+    title: Continuous Positive Airway Pressure (CPAP) Therapy For Obstructive Sleep Apnea (OSA)
+    url: https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=226&ncdver=3
+    version: "3"
+    retrieved: 2026-10-15
+  - type: LCD
+    id: L33718
+    title: Positive Airway Pressure (PAP) Devices for the Treatment of Obstructive Sleep Apnea
+    url: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=33718&ver=52
+    version: "52"
+    retrieved: 2026-10-15
+context:
+  initial: bool  # true for the first 3 months; false when continued coverage is at issue
+criteria:
+  - id: f2f_visit
+    text: An in-person visit with your treating practitioner before the sleep test
+    clause: >-
+      The beneficiary has an in-person clinical evaluation by the treating practitioner
+      prior to the sleep test to assess the beneficiary for obstructive sleep apnea.
+    source_id: L33718
+    evidence_type: encounter
+    variables: {evaluation_date: date, sleep_test_date: date}
+    rule: "evaluation_date is not None and sleep_test_date is not None and days_between(evaluation_date, sleep_test_date) >= 0"
+    critical: true
+  - id: ahi_threshold
+    text: Sleep test AHI or RDI of 15 or more, or 5 to 14 with qualifying symptoms or conditions
+    clause: >-
+      The apnea-hypopnea index (AHI) or Respiratory Disturbance Index (RDI) is greater than or
+      equal to 15 events per hour with a minimum of 30 events; or, The AHI or RDI is greater
+      than or equal to 5 and less than or equal to 14 events per hour with a minimum of 10
+      events and documentation of: Excessive daytime sleepiness, impaired cognition, mood
+      disorders, or insomnia; or, Hypertension, ischemic heart disease, or history of stroke.
+    source_id: L33718
+    evidence_type: lab_value
+    variables: {ahi: number, event_count: number, symptoms_or_conditions: list}
+    rule: "(ahi >= 15 and event_count >= 30) or (5 <= ahi <= 14 and event_count >= 10 and len(symptoms_or_conditions) > 0)"
+    critical: true
+  - id: adherence
+    text: Used PAP at least 4 hours a night on 70% of nights in 30 days in a row, within the first 3 months
+    clause: >-
+      Adherence to therapy is defined as use of PAP ≥4 hours per night on 70% of nights during
+      a consecutive thirty (30) day period anytime during the first three (3) months of initial usage.
+    source_id: L33718
+    evidence_type: device_report
+    variables: {pct_nights_4h_best_30d: number, window_in_first_90_days: bool}
+    rule: "pct_nights_4h_best_30d >= 70 and window_in_first_90_days"
+    critical: true
+  - id: reevaluation
+    text: A follow-up visit between day 31 and day 91 showing PAP is helping
+    clause: >-
+      Continued coverage of a PAP device (E0470 or E0601) beyond the first three months of therapy
+      requires that, no sooner than the 31st day but no later than the 91st day after initiating
+      therapy, the treating practitioner must conduct a clinical re-evaluation and document that
+      the beneficiary is benefiting from PAP therapy.
+    source_id: L33718
+    evidence_type: encounter
+    variables: {therapy_start_date: date, reevaluation_date: date, symptoms_improved: bool}
+    rule: "days_between(therapy_start_date, reevaluation_date) >= 30 and within_days(therapy_start_date, reevaluation_date, 90) and symptoms_improved"
+    critical: false
+logic: "f2f_visit and ahi_threshold and (initial or (adherence and reevaluation))"

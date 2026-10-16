@@ -1,0 +1,7 @@
+"ReferenceID","ReportYear","DiagnosisCategory","DiagnosisSubCategory","TreatmentCategory","TreatmentSubCategory","Determination","Type","AgeRange","PatientGender","IMRType","DaysToReview","DaysToAdopt","Findings"
+"FAKE-1","2021","Respiratory System","Sleep Apnea","DME","CPAP","Overturned Decision of Health Plan","Medical Necessity","51 to 64","Female","Standard","21","35","Fake findings text one."
+"FAKE-2","2022","Respiratory System","Sleep Apnea","DME","CPAP","Upheld Decision of Health Plan","Medical Necessity","65+","Male","Standard","20","40","Fake findings text two."
+"FAKE-3","2023","Orth/Musculoskeletal","Back Pain","Pain Management","Facet Injection","Overturned Decision of Health Plan","Medical Necessity","41 to 50","Female","Expedited","3","14","Fake findings text three."
+"FAKE-4","2024","Respiratory System","COPD","DME","Oxygen","Upheld Decision of Health Plan","Experimental/Investigational","","","Standard","21","36","Fake findings text four."
+"FAKE-5","2025","Orth/Musculoskeletal","Back Pain","Pain Management","Facet Injection","Overturned Decision of Health Plan","Medical Necessity","31 to 40","Other","Standard","22","37","Fake findings text five."
+"FAKE-6","2025","Cardiac/Circ Problem","Other","Pharmacy","Other","Upheld Decision of Health Plan","Urgent Care","0 to 10","Male","Expedited","2","5","Fake findings text six."

@@ -1,0 +1,68 @@
+# Facet joint interventions, WPS (Missouri's MAC) LCD L38841.
+# Clauses are copied verbatim (whitespace-normalized) from the CMS MCD CSV export.
+# Models the general indications plus the initial radiofrequency ablation (RFA) requirement.
+id: facet-joint
+title: Facet joint interventions for chronic neck or back pain
+sources:
+  - type: LCD
+    id: L38841
+    title: Facet Joint Interventions for Pain Management
+    url: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdid=38841&ver=20
+    version: "20"
+    retrieved: 2026-10-15
+context:
+  diagnostic_only: bool  # true when the request is for a first diagnostic block, not RFA
+criteria:
+  - id: pain_and_function
+    text: Moderate to severe neck or low back pain that limits function, measured on a pain or disability scale (PAIR reads "moderate" as 4 or more on a 0 to 10 scale)
+    clause: >-
+      Moderate to severe chronic neck or low back pain, predominantly axial, that causes
+      functional deficit measured on pain or disability scale
+    source_id: L38841
+    evidence_type: encounter
+    variables: {pain_score: number, pain_is_axial: bool, functional_deficit_documented: bool}
+    rule: "pain_score >= 4 and pain_is_axial and functional_deficit_documented"
+    critical: true
+  - id: duration_and_conservative_care
+    text: Pain for at least 3 months, and treatments like physical therapy or medication didn't work
+    clause: >-
+      Pain present for minimum of 3 months with documented failure to respond to noninvasive
+      conservative management (as tolerated)
+    source_id: L38841
+    evidence_type: therapy_history
+    variables: {pain_duration_months: number, conservative_care_failed: bool}
+    rule: "pain_duration_months >= 3 and conservative_care_failed"
+    critical: true
+  - id: no_untreated_radiculopathy
+    text: No untreated nerve-root pain (radiculopathy) or neurogenic claudication
+    clause: >-
+      Absence of untreated radiculopathy or neurogenic claudication (except for radiculopathy
+      caused by facet joint synovial cyst)
+    source_id: L38841
+    evidence_type: encounter
+    variables: {untreated_radiculopathy: bool}
+    rule: "not untreated_radiculopathy"
+    critical: false
+  - id: no_other_pathology
+    text: No other cause found for the pain, such as a fracture, tumor or infection
+    clause: >-
+      There is no non-facet pathology per clinical assessment or radiology studies that could
+      explain the source of the patient’s pain, including but not limited to fracture, tumor,
+      infection, or significant deformity.
+    source_id: L38841
+    evidence_type: encounter
+    variables: {other_pathology_found: bool}
+    rule: "not other_pathology_found"
+    critical: false
+  - id: diagnostic_block_relief
+    text: Before RFA, at least 2 diagnostic nerve blocks each gave 80% or more pain relief
+    clause: >-
+      Initial thermal RFA: after the patient has had at least 2 medically reasonable and necessary
+      diagnostic MBBs, with each one providing a consistent minimum of 80% sustained relief of
+      primary (index) pain (with the duration of relief being consistent with the agent used).
+    source_id: L38841
+    evidence_type: therapy_history
+    variables: {blocks_with_80pct_relief: number}
+    rule: "blocks_with_80pct_relief >= 2"
+    critical: true
+logic: "pain_and_function and duration_and_conservative_care and no_untreated_radiculopathy and no_other_pathology and (diagnostic_only or diagnostic_block_relief)"

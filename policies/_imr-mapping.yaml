@@ -1,0 +1,28 @@
+# Which California IMR cases count as "similar" for each policy's base rate (ADR-0007).
+# A case matches if it satisfies any filter in match_any; within a filter, every column must match.
+# Only pre-decision feature columns are allowed (docs/data/imr-schema.md). Counts are from the
+# 2026-10-15 snapshot (42,749 rows). IMR covers California commercial plans, not Medicare.
+pap-osa:
+  rationale: >-
+    PAP machines are coded as DME "C-Pap Machine" (66 cases). DME requests coded "Other" or
+    "Humidifier" with a sleep apnea diagnosis are almost always PAP equipment, so they are
+    included (about 58 more). Oxygen and mandibular devices for sleep apnea are excluded.
+  match_any:
+    - TreatmentSubCategory: [C-Pap Machine]
+    - TreatmentCategory: [DME]
+      TreatmentSubCategory: [Other, Humidifier]
+      DiagnosisSubCategory: [Sleep Apnea, Apnea/Sleep Apnea]
+home-oxygen:
+  rationale: >-
+    All home oxygen equipment and supply subcategories, across diagnoses (48 cases). Small
+    sample, so intervals will be wide and the score will often abstain.
+  match_any:
+    - TreatmentSubCategory: [Oxygen, Accs Oxygen Deliv Devices, Oxygen Delivery Sys Supplies]
+facet-joint:
+  rationale: >-
+    IMR has no facet-specific code. Facet procedures appear as nerve blocks and radiofrequency
+    ablation; restricting to back, neck and disc pain diagnoses removes RFA for veins,
+    fibroids and thyroid (139 cases).
+  match_any:
+    - TreatmentSubCategory: [Nerve Block, Radiofreq Ablat]
+      DiagnosisSubCategory: [Back Pain, Neck Problem/Pain, Disc Inflam/Pain/Oth Dorsalgia]

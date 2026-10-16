@@ -1,0 +1,4 @@
+"lcd_id","lcd_version","title","status","rev_eff_date","indication","doc_reqs","coding_guidelines"
+"99001","3","Fake Device Policy","A","2026-01-01 00:00:00","<p><strong>Coverage</strong><br />A device is covered when <em>ALL</em> of these are met:</p><ol><li>AHI &#8805; 15 events per hour</li><li>Face&#8211;to&#8211;face visit</li></ol>","<p>Keep the  usage report.</p>",""
+"99001","2","Fake Device Policy (old)","A","2025-01-01 00:00:00","<p>old text</p>","",""
+"99002","1","Proposed Only","P","","<p>draft</p>","",""
