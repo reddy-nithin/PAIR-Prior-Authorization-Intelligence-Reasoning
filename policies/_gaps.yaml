@@ -1,0 +1,105 @@
+# Plain-language "what's missing" messages, one pair per criterion (spec §6.7).
+# insufficient: the records don't show the item yet, so say who to ask for what.
+# unmet: the records show the item doesn't meet the rule. No "raise your chances" path (ADR-0007).
+# Patient-facing text: grade 8 reading level, no dashes as punctuation.
+pap-osa:
+  f2f_visit:
+    insufficient: >-
+      Ask your doctor's office for the note from your in-person visit before your sleep test.
+      It should show the visit date and that they checked you for sleep apnea.
+    unmet: >-
+      Your records show the in-person visit happened after your sleep test, and the rule needs it
+      before. Ask your doctor whether a new visit and sleep test make sense for you.
+  ahi_threshold:
+    insufficient: >-
+      Ask for your full sleep test report with your AHI number and total breathing events. If your
+      AHI is 5 to 14, also ask for notes on sleepiness, mood, memory, insomnia, high blood pressure,
+      heart disease or stroke.
+    unmet: >-
+      Your sleep test numbers are below what this rule requires. Ask your doctor about a repeat
+      test or other treatments for your sleep problem.
+  adherence:
+    insufficient: >-
+      Ask your equipment supplier for the usage report from your PAP machine. It should show
+      hours of use per night for 30 days in a row within your first 3 months.
+    unmet: >-
+      Your machine's report shows less than 4 hours a night on 70% of nights. Ask your doctor
+      about mask fit, comfort settings, or other treatment options.
+  reevaluation:
+    insufficient: >-
+      Ask your doctor's office for the note from your follow-up visit between day 31 and day 91
+      after you started PAP. It should say whether PAP is helping you.
+    unmet: >-
+      Your follow-up visit was outside the day 31 to day 91 window, or the note says PAP isn't
+      helping. Ask your doctor what to do next.
+home-oxygen:
+  ordered_and_evaluated:
+    insufficient: >-
+      Ask your doctor's office for a note showing they ordered your oxygen test, reviewed the
+      result, and that the test was done when you needed oxygen.
+    unmet: >-
+      Your records show the oxygen test wasn't ordered and reviewed by your doctor, or wasn't done
+      when you needed oxygen. Ask your doctor whether a new test is needed.
+  qualified_tester:
+    insufficient: >-
+      Ask for the oxygen test report. It should show who did the test, such as your doctor's
+      office, a hospital, or a lab.
+    unmet: >-
+      Your records show the oxygen test was done by the oxygen supplier, which this rule doesn't
+      accept. Ask your doctor for a test by their office or a lab.
+  group1_blood_gas:
+    insufficient: >-
+      Ask for your oxygen test results taken at rest while breathing room air. They should show
+      your PO2 (blood gas) or oxygen saturation number.
+    unmet: >-
+      Your resting oxygen level is above this rule's limit. Ask your doctor whether other tests,
+      such as during sleep or exercise, apply to you.
+  group2_blood_gas:
+    insufficient: >-
+      If your oxygen level was PO2 56 to 59 or 89%, ask for notes showing swelling from heart
+      failure, pulmonary hypertension, or a high hematocrit.
+    unmet: >-
+      Your oxygen level or other health findings don't match this rule. Ask your doctor about
+      what other tests or treatments fit your situation.
+  home_benefit:
+    insufficient: >-
+      Ask your doctor for a note saying that oxygen at home is expected to improve your condition.
+    unmet: >-
+      Your doctor's note doesn't say home oxygen will help you. Ask your doctor to talk through
+      why, and what other options there are.
+facet-joint:
+  pain_and_function:
+    insufficient: >-
+      Ask your doctor for notes that rate your pain on a 0 to 10 scale, say it is mainly in your
+      neck or low back, and describe how it limits your daily activities.
+    unmet: >-
+      Your records show pain that is milder than this rule requires, or not mainly in the neck or
+      low back. Ask your doctor about other treatments.
+  duration_and_conservative_care:
+    insufficient: >-
+      Ask for notes showing how long you have had the pain and which treatments you tried, like
+      physical therapy or medicine, and that they didn't work.
+    unmet: >-
+      Your records show the pain started less than 3 months ago, or other treatments are still
+      helping. Ask your doctor what to try next.
+  no_untreated_radiculopathy:
+    insufficient: >-
+      Ask your doctor for a note saying whether you have nerve pain going down an arm or leg, and
+      if so, how it was treated.
+    unmet: >-
+      Your records show untreated nerve pain going down an arm or leg. Ask your doctor about
+      treating that first.
+  no_other_pathology:
+    insufficient: >-
+      Ask for your exam or imaging notes. They should say no other cause, like a fracture, tumor
+      or infection, explains your pain.
+    unmet: >-
+      Your records show another possible cause for your pain. Ask your doctor about treating that
+      cause.
+  diagnostic_block_relief:
+    insufficient: >-
+      Ask for the notes from your diagnostic nerve blocks. They should show at least 2 blocks,
+      each giving 80% or more pain relief.
+    unmet: >-
+      Your records show fewer than 2 nerve blocks with 80% or more relief. Ask your doctor about
+      other treatment options.

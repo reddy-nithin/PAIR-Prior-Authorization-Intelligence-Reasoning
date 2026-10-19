@@ -1,0 +1,26 @@
+# Service code → policy table for denials that cite no NCD/LCD (spec §4 step 2).
+# Codes only (HCPCS Level II and CPT numbers); no CPT descriptors are stored (AMA license).
+# Only codes the checklist actually models are listed. A code missing here means "unsupported".
+pap-osa:
+  - E0601   # CPAP device. Bilevel E0470/E0471 have extra criteria PAIR doesn't model yet.
+home-oxygen:
+  - E1390   # stationary oxygen concentrator
+  - E1391
+  - E1392   # portable concentrator
+  - E0424   # stationary gaseous system
+  - E0439   # stationary liquid system
+  - E0431   # portable gaseous system
+  - E0433
+  - E0434   # portable liquid system
+  - K0738
+facet-joint:
+  - "64490" # facet joint injection / medial branch block, cervical or thoracic
+  - "64491"
+  - "64492"
+  - "64493" # lumbar or sacral
+  - "64494"
+  - "64495"
+  - "64633" # radiofrequency ablation, cervical or thoracic
+  - "64634"
+  - "64635" # lumbar or sacral
+  - "64636"

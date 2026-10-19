@@ -45,7 +45,7 @@ criteria:
     source_id: L33797
     evidence_type: lab_value
     variables: {pao2: number, spo2: number, at_rest_on_room_air: bool}
-    rule: "at_rest_on_room_air and ((pao2 is not None and pao2 <= 55) or (spo2 is not None and spo2 <= 88))"
+    rule: "at_rest_on_room_air and (pao2 <= 55 or spo2 <= 88)"
     critical: false
   - id: group2_blood_gas
     text: "Group II: PO2 56 to 59 or saturation 89%, plus swelling from heart failure, pulmonary hypertension, or a high hematocrit"
@@ -59,7 +59,7 @@ criteria:
     source_id: L33797
     evidence_type: lab_value
     variables: {pao2: number, spo2: number, group2_conditions: list}
-    rule: "((pao2 is not None and 56 <= pao2 <= 59) or spo2 == 89) and len(group2_conditions) > 0"
+    rule: "(56 <= pao2 <= 59 or spo2 == 89) and len(group2_conditions) > 0"
     critical: false
   - id: home_benefit
     text: Your practitioner expects oxygen at home to improve your condition

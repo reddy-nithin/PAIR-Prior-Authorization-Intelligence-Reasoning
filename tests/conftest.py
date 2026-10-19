@@ -1,10 +1,23 @@
 """Shared pytest fixtures for the PAIR test suite."""
 
+import os
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT: Path = Path(__file__).resolve().parent.parent
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    """Skip ``llm``-marked tests unless ``PAIR_LLM_LIVE=1`` (they cost money or need the lab GPU)."""
+    if os.environ.get("PAIR_LLM_LIVE") == "1":
+        return
+    skip = pytest.mark.skip(reason="live LLM test; set PAIR_LLM_LIVE=1 to run")
+    for item in items:
+        if "llm" in item.keywords:
+            item.add_marker(skip)
 
 
 @pytest.fixture(scope="session")

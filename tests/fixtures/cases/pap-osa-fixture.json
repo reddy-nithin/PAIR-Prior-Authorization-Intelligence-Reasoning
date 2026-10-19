@@ -1,0 +1,157 @@
+{
+  "id": "pap-osa-fixture",
+  "policy_id": "pap-osa",
+  "case_type": "B",
+  "context": {
+    "initial": false
+  },
+  "profile": {
+    "synthea_id": "syn-1",
+    "age": 71,
+    "sex": "F",
+    "conditions": [
+      "Hypertension",
+      "Obesity"
+    ]
+  },
+  "states": {
+    "f2f_visit": "absent",
+    "ahi_threshold": "present",
+    "adherence": "present",
+    "reevaluation": "present"
+  },
+  "notes": [
+    {
+      "doc_id": "clinic",
+      "title": "Sleep medicine clinic notes",
+      "text": "SYNTHETIC RECORD - not a real patient.\nSynthetic note. CPAP started 04/16/2026. Follow-up visit 06/12/2026. daytime sleepiness. sleepiness much improved on CPAP."
+    },
+    {
+      "doc_id": "report",
+      "title": "Home sleep test and CPAP device report",
+      "text": "SYNTHETIC RECORD - not a real patient.\nSynthetic note. 131 total respiratory events. 30 consecutive days within the first 3 months. AHI 22.4 events/hour. Home sleep test 04/06/2026. used 4 hours or more on 78% of nights."
+    }
+  ],
+  "denial_text": "SYNTHETIC TEST LETTER - not a real patient or health plan\nRiverbend MA Plus (a Medicare Advantage plan)\nNotice of Denial of Medical Coverage\n\nDate: July 23, 2026\nMember ID: SYN-731262\n\nWe denied your request for: CPAP device (continuous positive airway pressure) (HCPCS E0601).\n\nWhy we denied it: The records do not show an in-person evaluation with your doctor before the sleep test.\nCoverage rule used: LCD L33718.\n\nYou have the right to appeal this decision. Ask for an appeal within 65 days of the date of this notice.\nCall Member Services at 1-800-555-0100 (TTY 711).\n",
+  "gold_denial": {
+    "service": "CPAP device (continuous positive airway pressure)",
+    "codes": [
+      "E0601"
+    ],
+    "reason_text": "The records do not show an in-person evaluation with your doctor before the sleep test.",
+    "reason_category": "insufficient_documentation",
+    "policy_ref": "L33718",
+    "plan_type": "medicare_advantage",
+    "date": "2026-07-23"
+  },
+  "gold_statuses": {
+    "f2f_visit": "insufficient",
+    "ahi_threshold": "met",
+    "adherence": "met",
+    "reevaluation": "met"
+  },
+  "gold_overall": "insufficient",
+  "gold_evidence": [
+    {
+      "criterion_id": "f2f_visit",
+      "variable": "sleep_test_date",
+      "value": "2026-04-06",
+      "span_text": "Home sleep test 04/06/2026",
+      "char_start": 154,
+      "char_end": 180,
+      "doc_id": "report",
+      "status": "asserted"
+    },
+    {
+      "criterion_id": "ahi_threshold",
+      "variable": "ahi",
+      "value": 22.4,
+      "span_text": "AHI 22.4 events/hour",
+      "char_start": 132,
+      "char_end": 152,
+      "doc_id": "report",
+      "status": "asserted"
+    },
+    {
+      "criterion_id": "ahi_threshold",
+      "variable": "event_count",
+      "value": 131,
+      "span_text": "131 total respiratory events",
+      "char_start": 55,
+      "char_end": 83,
+      "doc_id": "report",
+      "status": "asserted"
+    },
+    {
+      "criterion_id": "ahi_threshold",
+      "variable": "symptoms_or_conditions",
+      "value": [
+        "daytime sleepiness"
+      ],
+      "span_text": "daytime sleepiness",
+      "char_start": 108,
+      "char_end": 126,
+      "doc_id": "clinic",
+      "status": "asserted"
+    },
+    {
+      "criterion_id": "adherence",
+      "variable": "pct_nights_4h_best_30d",
+      "value": 78,
+      "span_text": "used 4 hours or more on 78% of nights",
+      "char_start": 182,
+      "char_end": 219,
+      "doc_id": "report",
+      "status": "asserted"
+    },
+    {
+      "criterion_id": "adherence",
+      "variable": "window_in_first_90_days",
+      "value": true,
+      "span_text": "30 consecutive days within the first 3 months",
+      "char_start": 85,
+      "char_end": 130,
+      "doc_id": "report",
+      "status": "asserted"
+    },
+    {
+      "criterion_id": "reevaluation",
+      "variable": "therapy_start_date",
+      "value": "2026-04-16",
+      "span_text": "CPAP started 04/16/2026",
+      "char_start": 55,
+      "char_end": 78,
+      "doc_id": "clinic",
+      "status": "asserted"
+    },
+    {
+      "criterion_id": "reevaluation",
+      "variable": "reevaluation_date",
+      "value": "2026-06-12",
+      "span_text": "Follow-up visit 06/12/2026",
+      "char_start": 80,
+      "char_end": 106,
+      "doc_id": "clinic",
+      "status": "asserted"
+    },
+    {
+      "criterion_id": "reevaluation",
+      "variable": "symptoms_improved",
+      "value": true,
+      "span_text": "sleepiness much improved on CPAP",
+      "char_start": 128,
+      "char_end": 160,
+      "doc_id": "clinic",
+      "status": "asserted"
+    }
+  ],
+  "synthetic": true,
+  "seed": 42,
+  "generator": {
+    "backend": "fake",
+    "model": "phrase-writer",
+    "note_attempts": "1"
+  },
+  "usage_prompt_tokens": 100,
+  "usage_output_tokens": 50
+}

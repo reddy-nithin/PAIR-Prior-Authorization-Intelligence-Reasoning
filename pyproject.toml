@@ -7,9 +7,20 @@ license = { text = "MIT" }
 authors = [{ name = "Nithin Reddy" }]
 requires-python = ">=3.11"
 dependencies = [
+    "google-genai>=2.31.0",
+    "langextract==1.7.1",
     "pandas>=3.0.6",
     "pydantic>=2",
     "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+pair = "pair.cli:entry"
+
+[project.optional-dependencies]
+ocr = [
+    "docling==2.140.0",
+    "ocrmac>=1.0.1",
 ]
 
 [dependency-groups]
@@ -35,6 +46,8 @@ addopts = "-ra"
 markers = [
     "mcd: needs the MCD export in data/raw/mcd (run `make data`); skipped if absent",
     "imr: needs the IMR CSV in data/raw/imr (run `make data`); skipped if absent",
+    "docling: needs the optional `ocr` extra (Docling); skipped if absent",
+    "llm: calls a real LLM backend (lab tunnel or Vertex); skipped unless PAIR_LLM_LIVE=1",
 ]
 
 [tool.coverage.run]

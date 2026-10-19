@@ -28,6 +28,9 @@ The baseline plan documents (`docs/blueprint-v2.md`, `docs/insurance-companion.m
 | 0007 | Bayes-style strength score with an explanation panel | Accepted | 2026-10-15 |
 | 0008 | Rule expression language for policy checklists | Accepted | 2026-10-15 |
 | 0009 | Data-layer dependencies for contracts, policies and IMR | Accepted | 2026-10-15 |
+| 0010 | Phase 2 dependencies and the Gemini model | Accepted | 2026-10-16 |
+| 0011 | LLM placement: Gemma 4 E4B on the lab server, E2B on the laptop | Accepted | 2026-10-16 |
+| 0012 | Rule evaluation semantics: three-valued logic and evidence binding | Accepted | 2026-10-16 |
 
 ## Template
 

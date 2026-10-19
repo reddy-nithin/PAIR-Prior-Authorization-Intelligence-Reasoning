@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-ALL_TARGETS: list[str] = ["setup", "data", "data-mcd", "data-imr", "strip-notebooks", "demo", "eval", "test"]
+ALL_TARGETS: list[str] = ["setup", "data", "data-mcd", "data-imr", "data-synthea", "cases", "eval-core", "strip-notebooks", "demo", "eval", "test"]
 NOT_BUILT_TARGETS: list[str] = ["demo", "eval"]
 
 

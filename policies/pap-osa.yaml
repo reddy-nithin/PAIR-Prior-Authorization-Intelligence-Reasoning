@@ -1,6 +1,7 @@
 # PAP devices (E0601) for obstructive sleep apnea.
 # Clauses are copied verbatim (whitespace-normalized) from the CMS MCD CSV export.
-# Rule language: ADR-0008. `critical` drives abstention: ADR-0007.
+# Rule language: ADR-0008, evaluated three-valued (ADR-0012: no `is not None` guards).
+# `critical` drives abstention: ADR-0007.
 id: pap-osa
 title: Positive airway pressure (PAP) devices for obstructive sleep apnea
 sources:
@@ -27,7 +28,7 @@ criteria:
     source_id: L33718
     evidence_type: encounter
     variables: {evaluation_date: date, sleep_test_date: date}
-    rule: "evaluation_date is not None and sleep_test_date is not None and days_between(evaluation_date, sleep_test_date) >= 0"
+    rule: "days_between(evaluation_date, sleep_test_date) >= 0"
     critical: true
   - id: ahi_threshold
     text: Sleep test AHI or RDI of 15 or more, or 5 to 14 with qualifying symptoms or conditions

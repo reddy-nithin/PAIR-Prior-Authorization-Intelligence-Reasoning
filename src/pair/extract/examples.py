@@ -1,0 +1,103 @@
+"""Few-shot examples for LangExtract, one synthetic note per policy (no real PHI).
+
+Extraction classes are the checklist's rule variables. Each extraction carries
+two attributes: ``value`` (the normalizable value; for bools, the variable's own
+truth, ADR-0012) and ``status`` (asserted / negated / uncertain). Every
+``extraction_text`` is copied verbatim from the example text (tested).
+"""
+
+from langextract import data as lx
+
+Example = lx.ExampleData
+
+
+def _x(cls: str, text: str, value: str, status: str = "asserted") -> lx.Extraction:
+    """One example extraction."""
+    return lx.Extraction(cls, text, attributes={"value": value, "status": status})
+
+
+_PAP_TEXT = (
+    "SYNTHETIC EXAMPLE. Sleep medicine visit 01/12/2026: seen in person for loud snoring and witnessed apneas. "
+    "Reports daytime sleepiness. Denies morning headaches.\n"
+    "Home sleep test 02/02/2026: AHI 22.4 events/hour, 131 total respiratory events.\n"
+    "CPAP started 02/20/2026. Device download, 30 consecutive days within the first 3 months: "
+    "used 4 hours or more on 76% of nights.\n"
+    "Follow-up visit 04/01/2026: sleepiness much improved on CPAP."
+)
+
+_OXYGEN_TEXT = (
+    "SYNTHETIC EXAMPLE. Pulmonology visit 03/03/2026: I ordered resting oximetry and reviewed the results "
+    "with the patient. Tested during this visit while short of breath. "
+    "Hospital outpatient lab arterial blood gas at rest on room air: PaO2 54 mmHg, SpO2 87%. "
+    "Mild ankle edema. No pulmonary hypertension on echo. "
+    "Plan: home oxygen is expected to improve dyspnea and exercise tolerance."
+)
+
+_FACET_TEXT = (
+    "SYNTHETIC EXAMPLE. Pain clinic 05/10/2026: chronic axial low back pain for 8 months, rated 7/10, "
+    "limits walking and work (ODI 42%). Failed 12 weeks of physical therapy and NSAIDs. "
+    "No radicular symptoms; straight leg raise negative. MRI: facet arthropathy L4-5, "
+    "no fracture, tumor or infection. Two medial branch blocks each gave 85% relief."
+)
+
+EXAMPLES: dict[str, list[Example]] = {
+    "pap-osa": [
+        Example(
+            text=_PAP_TEXT,
+            extractions=[
+                _x("evaluation_date", "Sleep medicine visit 01/12/2026", "2026-01-12"),
+                _x("symptoms_or_conditions", "loud snoring", "snoring"),
+                _x("symptoms_or_conditions", "daytime sleepiness", "daytime sleepiness"),
+                _x("symptoms_or_conditions", "morning headaches", "morning headaches", "negated"),
+                _x("sleep_test_date", "Home sleep test 02/02/2026", "2026-02-02"),
+                _x("ahi", "AHI 22.4 events/hour", "22.4"),
+                _x("event_count", "131 total respiratory events", "131"),
+                _x("therapy_start_date", "CPAP started 02/20/2026", "2026-02-20"),
+                _x("window_in_first_90_days", "30 consecutive days within the first 3 months", "true"),
+                _x("pct_nights_4h_best_30d", "used 4 hours or more on 76% of nights", "76"),
+                _x("reevaluation_date", "Follow-up visit 04/01/2026", "2026-04-01"),
+                _x("symptoms_improved", "sleepiness much improved on CPAP", "true"),
+            ],
+        )
+    ],
+    "home-oxygen": [
+        Example(
+            text=_OXYGEN_TEXT,
+            extractions=[
+                _x("practitioner_ordered_and_reviewed", "I ordered resting oximetry and reviewed the results", "true"),
+                _x("tested_at_time_of_need", "Tested during this visit while short of breath", "true"),
+                _x("tested_by_qualified_provider", "Hospital outpatient lab arterial blood gas", "true"),
+                _x("at_rest_on_room_air", "at rest on room air", "true"),
+                _x("pao2", "PaO2 54 mmHg", "54"),
+                _x("spo2", "SpO2 87%", "87"),
+                _x("group2_conditions", "Mild ankle edema", "edema"),
+                _x("group2_conditions", "pulmonary hypertension", "pulmonary hypertension", "negated"),
+                _x("expected_to_improve", "home oxygen is expected to improve dyspnea", "true"),
+            ],
+        )
+    ],
+    "facet-joint": [
+        Example(
+            text=_FACET_TEXT,
+            extractions=[
+                _x("pain_is_axial", "axial low back pain", "true"),
+                _x("pain_duration_months", "for 8 months", "8"),
+                _x("pain_score", "rated 7/10", "7"),
+                _x("functional_deficit_documented", "limits walking and work (ODI 42%)", "true"),
+                _x("conservative_care_failed", "Failed 12 weeks of physical therapy and NSAIDs", "true"),
+                _x("untreated_radiculopathy", "No radicular symptoms", "false"),
+                _x("other_pathology_found", "no fracture, tumor or infection", "false"),
+                _x("blocks_with_80pct_relief", "Two medial branch blocks each gave 85% relief", "2"),
+            ],
+        )
+    ],
+}
+
+
+def examples_for(policy_id: str) -> list[Example]:
+    """The few-shot examples for a policy.
+
+    Raises:
+        KeyError: If the policy has no examples.
+    """
+    return EXAMPLES[policy_id]
