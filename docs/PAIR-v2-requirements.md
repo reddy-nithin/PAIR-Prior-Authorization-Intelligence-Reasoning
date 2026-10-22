@@ -340,11 +340,11 @@ All three remain options for Phase 2+ if policy count grows.
 | Denial parsing | Field accuracy (service, reason category, policy) | ≥90% | 30 synthetic letters |
 | Evidence extraction + rules | Per-criterion macro-F1 (met / unmet / insufficient) | ≥0.85 | Gold labels from planting |
 | Grounding | % extractions with valid char interval | ≥95% | Same |
-| Letter citations | **Claim funnel**: coverage → verbatim → lenient support → strict support (CCR) | CCR ≥80% after verifier | Claims from all cases; LLM judge + human audit |
+| Letter citations | **Claim funnel**: coverage → verbatim → lenient support → strict support (CCR) | CCR ≥80% after verifier | Claims from all cases; adversarial critic (ADR-0013) + human audit |
 | Conformal filter | Empirical vs target error (α = 0.1); abstention rate; support among non-empty | Within ±3 pts of target; report all three | Calibration/test split of claims |
 | Strength score | AUROC, Brier, reliability diagram, interval coverage | Coverage within ±3 pts of nominal | IMR test years (2024+) |
 | System | End-to-end latency on M2 | <60 s per case | Demo cases |
-| Human | 50-claim audit: supported / partly / unsupported | Agreement with auto-judge ≥85% | Random sample |
+| Human | 50-claim audit: supported / partly / unsupported | Agreement with the critic ≥85%, plus Cohen's kappa (ADR-0013) | Random sample, audited by Nithin |
 
 ### 8.2 Baselines and ablations (Phase 2 must, Phase 1 if time)
 

@@ -29,3 +29,18 @@ Run: backend `ollama`, model `gemma4:e4b`, host `http://localhost:11435`, config
 - Run 3 (the table above) is the official Phase 2 result on the original 30 test cases.
 - Caveat: the 30 test cases were also used to find the run 1 and run 2 failures, so they are not fully blind. The dev-set numbers are the cleaner estimate. Both sets share the same 40 Synthea profiles.
 
+<!-- audit-critic:start -->
+## Audit critic: seeded-fault test (ADR-0013)
+
+Seed `2026`, 20 faults + 10 clean twins, date `2026-10-22`.
+
+| Metric | Target | Result | Pass |
+|---|---|---|---|
+| Blocker faults caught | ≥90% | 100% (8/8) | ✅ |
+| Clean twins with a blocker flag | ≤10% | 40% (4/10) | ❌ |
+| All faults caught | report | 100% (20/20) | |
+
+- By kind: age_mismatch 2/2, contradiction 3/3, denial_reason_swap 3/3, impossible_vital 2/2, label_flip 2/2, paraphrase_leak 3/3, span_value_mismatch 3/3, template_echo 2/2.
+- Misses: none. False alarms: seed-02, seed-06, seed-10, seed-18.
+- Critic lines rejected (bad JSON or non-verbatim quote): 0; quote-less passes coerced to fail: 0; outputs missing: 0.
+<!-- audit-critic:end -->

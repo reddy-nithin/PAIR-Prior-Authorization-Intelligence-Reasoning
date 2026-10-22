@@ -1,4 +1,4 @@
-"""Command line: ``pair run <case>`` and ``pair eval-core`` (Phase 2 exit check)."""
+"""Command line: ``pair run <case>``, ``pair eval-core`` (Phase 2 exit check) and ``pair audit precheck``."""
 
 import argparse
 import dataclasses
@@ -13,6 +13,7 @@ from typing import Any
 
 import langextract as lx
 
+from pair.audit_cli import add_audit_parser, run_audit
 from pair.contracts import CriterionStatus
 from pair.eval.cases import CaseBundle, CaseLoadError, load_case
 from pair.eval.metrics import (
@@ -66,6 +67,7 @@ def _parser() -> argparse.ArgumentParser:
     ev.add_argument("--cases", type=Path, default=CASES_DIR)
     ev.add_argument("--results", type=Path, default=RESULTS_PATH)
     ev.add_argument("--runs", type=Path, default=RUNS_DIR)
+    add_audit_parser(sub)
     return parser
 
 
@@ -77,6 +79,8 @@ def main(
     """Entry point. ``client``/``extract_fn`` are injectable for tests. Returns an exit code."""
     args = _parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING, format="%(levelname)s %(message)s")
+    if args.command == "audit":
+        return run_audit(args)
     try:
         env = {**os.environ, **({"PAIR_LLM_BACKEND": args.backend} if args.backend else {})}
         config = LLMConfig.from_env(env)

@@ -19,7 +19,6 @@ from pair.policies.select import normalize_ref
 
 DENIAL_FIELDS: tuple[str, ...] = ("service", "codes", "reason_category", "policy_ref", "plan_type", "date")
 TARGETS: dict[str, float] = {"denial_accuracy": 0.90, "macro_f1": 0.85, "grounding": 0.95}
-START, END = "<!-- phase2-core:start -->", "<!-- phase2-core:end -->"
 
 StatusPair = tuple[CriterionStatus, CriterionStatus]
 """(gold, predicted)."""
@@ -213,13 +212,14 @@ def results_markdown(summary: Summary, meta: dict[str, str]) -> str:
     )
 
 
-def update_results(path: Path, section: str) -> Path:
-    """Write ``section`` between the phase-2 markers in RESULTS.md, keeping everything else."""
-    block = f"{START}\n{section}\n{END}"
+def update_results(path: Path, section: str, marker: str = "phase2-core") -> Path:
+    """Write ``section`` between the ``<!-- marker:start/end -->`` comments in RESULTS.md, keeping everything else."""
+    start, end = f"<!-- {marker}:start -->", f"<!-- {marker}:end -->"
+    block = f"{start}\n{section}\n{end}"
     text = path.read_text(encoding="utf-8") if path.exists() else "# PAIR results\n\nAll numbers come from logged runs.\n"
-    if START in text and END in text:
-        before, rest = text.split(START, 1)
-        after = rest.split(END, 1)[1]
+    if start in text and end in text:
+        before, rest = text.split(start, 1)
+        after = rest.split(end, 1)[1]
         text = before + block + after
     else:
         text = text.rstrip("\n") + "\n\n" + block + "\n"
