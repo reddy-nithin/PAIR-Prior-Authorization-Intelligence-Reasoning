@@ -59,3 +59,14 @@ def test_other_gender_codes_are_skipped(tmp_path: Path) -> None:
     """Profiles need F or M for the note prompt."""
     write(tmp_path, patients="Id,BIRTHDATE,DEATHDATE,GENDER\np9,1950-01-01,,X\n")
     assert load_synthea_profiles(tmp_path, dt.date(2026, 1, 1)) == []
+
+
+def test_ckd_stages_collapse_to_the_highest(tmp_path: Path) -> None:
+    """Synthea leaves several CKD stages active at once; a profile keeps only the highest."""
+    conditions = CONDITIONS + (
+        "2000-01-01,,p2,e,SNOMED-CT,6,Chronic kidney disease stage 1 (disorder)\n"
+        "2001-01-01,,p2,e,SNOMED-CT,7,Chronic kidney disease stage 3 (disorder)\n"
+        "2002-01-01,,p2,e,SNOMED-CT,8,Chronic kidney disease stage 2 (disorder)\n"
+    )
+    profiles = load_synthea_profiles(write(tmp_path, conditions=conditions), dt.date(2026, 10, 19))
+    assert profiles[1].conditions == ["Chronic kidney disease stage 3", "Obesity"]

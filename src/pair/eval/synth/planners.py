@@ -177,24 +177,28 @@ PAP_UNITS: tuple[Unit, ...] = (
         {
             "present": lambda d: _out(
                 {AHI: MET},
+                _p(AHI, "sleep_or_recording_hours", "total recording time 6.2 hours", 6.2, REPORT),
                 _p(AHI, "ahi", "AHI 22.4 events/hour", 22.4, REPORT),
                 _p(AHI, "event_count", "131 total respiratory events", 131, REPORT),
                 _p(AHI, "symptoms_or_conditions", "daytime sleepiness", ["daytime sleepiness"], CLINIC),
             ),
             "failing": lambda d: _out(
                 {AHI: UNMET},
+                _p(AHI, "sleep_or_recording_hours", "total recording time 6.8 hours", 6.8, REPORT),
                 _p(AHI, "ahi", "AHI 3.1 events/hour", 3.1, REPORT),
                 _p(AHI, "event_count", "18 total respiratory events", 18, REPORT),
             ),
             "absent": lambda d: _out({AHI: INSUFFICIENT}),
             "negated": lambda d: _out(
                 {AHI: INSUFFICIENT},
+                _p(AHI, "sleep_or_recording_hours", "total recording time 5.9 hours", 5.9, REPORT),
                 _p(AHI, "ahi", "AHI 9.6 events/hour", 9.6, REPORT),
                 _p(AHI, "event_count", "52 total respiratory events", 52, REPORT),
                 _p(AHI, "symptoms_or_conditions", "denies daytime sleepiness", ["daytime sleepiness"], CLINIC, "negated"),
             ),
             "conflicting": lambda d: _out(
                 {AHI: INSUFFICIENT},
+                _p(AHI, "sleep_or_recording_hours", "total recording time 6.4 hours", 6.4, REPORT),
                 _p(AHI, "ahi", "AHI 18.2 events/hour", 18.2, REPORT),
                 _p(AHI, "event_count", "106 total respiratory events", 106, REPORT),
                 _p(AHI, "ahi", "AHI of 11.0", 11.0, CLINIC),
@@ -270,7 +274,13 @@ PAP_UNITS: tuple[Unit, ...] = (
 
 def _oxygen_dates(rng: random.Random) -> dict[str, dt.date]:
     visit = dt.date(2026, 2, 2) + dt.timedelta(days=rng.randint(0, 150))
-    return {"visit": visit, "denial": visit + dt.timedelta(days=rng.randint(10, 30))}
+    discharge = visit - dt.timedelta(days=7)
+    return {
+        "visit": visit,
+        "denial": visit + dt.timedelta(days=rng.randint(10, 30)),
+        "discharge": discharge,
+        "early_inpatient_test": discharge - dt.timedelta(days=4),
+    }
 
 
 ORD = "ordered_and_evaluated"
@@ -291,10 +301,11 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
             ),
             "failing": lambda d: _out(
                 {ORD: UNMET},
-                _p(ORD, "practitioner_ordered_and_reviewed", "I ordered resting oximetry and reviewed the results", True, CLINIC),
-                _p(ORD, "rx_from_inpatient_stay", "seen as an outpatient, no recent hospital stay", False, CLINIC),
-                _p(ORD, "symptoms_noted_at_test", "tested at a routine visit with no shortness of breath or other symptoms",
-                   False, CLINIC),
+                _p(ORD, "practitioner_ordered_and_reviewed", "I ordered an arterial blood gas and reviewed the results", True, CLINIC),
+                _p(ORD, "rx_from_inpatient_stay", "home oxygen was first ordered at hospital discharge", True, CLINIC),
+                _p(ORD, "test_date", f"inpatient arterial blood gas {_d(d['early_inpatient_test'])}",
+                   d["early_inpatient_test"], CLINIC),
+                _p(ORD, "discharge_date", f"discharged home {_d(d['discharge'])}", d["discharge"], CLINIC),
             ),
             "absent": lambda d: _out({ORD: INSUFFICIENT}),
         },
@@ -343,8 +354,8 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
             "conflicting": lambda d: _out(
                 {G1: INSUFFICIENT, G2: INSUFFICIENT},
                 _p(G1, "at_rest_on_room_air", "at rest on room air", True, REPORT),
-                _p((G1, G2), "spo2", "SpO2 87%", 87, REPORT),
-                _p((G1, G2), "spo2", "oxygen saturation of 93%", 93, CLINIC),
+                _p((G1, G2), "spo2", "SpO2 87% at rest on room air", 87, REPORT),
+                _p((G1, G2), "spo2", "repeat SpO2 at rest on room air was 93%", 93, CLINIC),
             ),
         },
         "any oxygen level, saturation or blood gas numbers",
@@ -360,7 +371,7 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
             ),
             "failing": lambda d: _out(
                 {HB: UNMET},
-                _p(HB, "expected_to_improve", "home oxygen is not expected to change her symptoms", False, CLINIC),
+                _p(HB, "expected_to_improve", "home oxygen is not expected to change the patient's symptoms", False, CLINIC),
             ),
             "absent": lambda d: _out({HB: INSUFFICIENT}),
         },
@@ -447,7 +458,7 @@ FACET_UNITS: tuple[Unit, ...] = (
             "absent": lambda d: _out({RAD: INSUFFICIENT}),
         },
         "radiating leg pain, radiculopathy, neurogenic claudication or nerve symptoms",
-        r"radicul|radiat|sciatica|claudicat",
+        r"radicul|radiat|sciatica|claudicat|weakness|tingling|\bneuro(?:logic(?:al)?(?:ly)?)?\b[^.]{0,30}\bintact\b",
     ),
     Unit(
         PATH,
