@@ -12,7 +12,7 @@ pap-osa:
       before. Ask your doctor whether a new visit and sleep test make sense for you.
   ahi_threshold:
     insufficient: >-
-      Ask for your full sleep test report with your AHI number and total breathing events. If your
+      Ask for your full sleep test report with your AHI and the hours of sleep it covered. If your
       AHI is 5 to 14, also ask for notes on sleepiness, mood, memory, insomnia, high blood pressure,
       heart disease or stroke.
     unmet: >-
@@ -35,11 +35,13 @@ pap-osa:
 home-oxygen:
   ordered_and_evaluated:
     insufficient: >-
-      Ask your doctor's office for a note showing they ordered your oxygen test, reviewed the
-      result, and that the test was done when you needed oxygen.
+      Ask your doctor's office for a note showing they ordered your oxygen test and reviewed the
+      result. It should also show the test date and your symptoms that day, or, if the oxygen
+      started after a hospital stay, your discharge date.
     unmet: >-
       Your records show the oxygen test wasn't ordered and reviewed by your doctor, or wasn't done
-      when you needed oxygen. Ask your doctor whether a new test is needed.
+      when you needed oxygen (within 2 days before leaving the hospital, or while you had
+      symptoms). Ask your doctor whether a new test is needed.
   qualified_tester:
     insufficient: >-
       Ask for the oxygen test report. It should show who did the test, such as your doctor's
@@ -70,8 +72,9 @@ home-oxygen:
 facet-joint:
   pain_and_function:
     insufficient: >-
-      Ask your doctor for notes that rate your pain on a 0 to 10 scale, say it is mainly in your
-      neck or low back, and describe how it limits your daily activities.
+      Ask your doctor for notes that rate your pain, on a 0 to 10 scale or as mild, moderate or
+      severe, say it is mainly in your neck or low back, and describe how it limits your daily
+      activities.
     unmet: >-
       Your records show pain that is milder than this rule requires, or not mainly in the neck or
       low back. Ask your doctor about other treatments.
@@ -84,11 +87,11 @@ facet-joint:
       helping. Ask your doctor what to try next.
   no_untreated_radiculopathy:
     insufficient: >-
-      Ask your doctor for a note saying whether you have nerve pain going down an arm or leg, and
-      if so, how it was treated.
+      Ask your doctor for a note saying whether you have nerve pain going down an arm or leg, or
+      leg pain when you walk (neurogenic claudication), and if so, how it was treated.
     unmet: >-
-      Your records show untreated nerve pain going down an arm or leg. Ask your doctor about
-      treating that first.
+      Your records show untreated nerve pain going down an arm or leg, or untreated leg pain
+      when you walk. Ask your doctor about treating that first.
   no_other_pathology:
     insufficient: >-
       Ask for your exam or imaging notes. They should say no other cause, like a fracture, tumor
@@ -99,7 +102,7 @@ facet-joint:
   diagnostic_block_relief:
     insufficient: >-
       Ask for the notes from your diagnostic nerve blocks. They should show at least 2 blocks,
-      each giving 80% or more pain relief.
+      each giving 80% or more pain relief, and how long the relief lasted.
     unmet: >-
-      Your records show fewer than 2 nerve blocks with 80% or more relief. Ask your doctor about
-      other treatment options.
+      Your records show fewer than 2 nerve blocks with 80% or more relief, or relief that didn't
+      last as long as expected. Ask your doctor about other treatment options.

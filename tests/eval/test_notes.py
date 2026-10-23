@@ -128,6 +128,8 @@ def test_check_ignores_capitalization_and_gold_span_uses_note_text() -> None:
         ("home-oxygen", "home_benefit", "Oxygen is expected to help."),
         ("home-oxygen", "qualified_tester", "The test was performed by the hospital laboratory."),
         ("pap-osa", "reevaluation", "Follow-up in clinic went well."),
+        ("facet-joint", "pain_and_function", "She reports moderate low back pain."),
+        ("facet-joint", "no_untreated_radiculopathy", "Leg pain with walking suggests neurogenic claudication."),
     ],
 )
 def test_absent_units_catch_leaks(policy_id: str, unit: str, leak: str) -> None:

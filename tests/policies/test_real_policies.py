@@ -83,6 +83,134 @@ def test_pap_f2f_before_sleep_test(
     assert evaluate_rule(criterion.rule, values) is expected
 
 
+def rule_of(policies: dict[str, Checklist], policy_id: str, criterion_id: str) -> str:
+    """One shipped criterion's rule expression."""
+    return next(c.rule for c in policies[policy_id].criteria if c.id == criterion_id)
+
+
+SYMPTOM = ["hypertension"]
+D_START = dt.date(2026, 3, 1)
+
+
+@pytest.mark.parametrize(
+    ("ahi", "hours", "events", "symptoms", "expected"),
+    [
+        (22, 6.0, None, None, True),  # full-night study reporting only the AHI
+        (15, 2.0, None, None, True),  # exactly 2 hours is not "less than 2 hours"
+        (15, 1.5, 29, None, False),
+        (15, 1.5, 30, None, True),
+        (18, None, None, None, None),  # no recording time and no count: route still open
+        (18, None, 40, None, True),
+        (10, 6.0, None, SYMPTOM, True),
+        (10, 1.5, 9, SYMPTOM, False),
+        (10, 1.5, 10, SYMPTOM, True),
+        (10, 6.0, None, None, None),
+        (14.5, 6.0, None, SYMPTOM, False),  # between the LCD's two bands (open question in rule-review.md)
+        (4, 6.0, None, SYMPTOM, False),
+    ],
+)
+def test_pap_event_minimum_applies_only_under_two_hours(
+    policies: dict[str, Checklist],
+    ahi: float,
+    hours: float | None,
+    events: int | None,
+    symptoms: list[str] | None,
+    expected: bool | None,
+) -> None:
+    """L33718 asks for 30/10 events only when the AHI rests on less than 2 hours (ADR-0015)."""
+    values = {"ahi": ahi, "sleep_or_recording_hours": hours, "event_count": events, "symptoms_or_conditions": symptoms}
+    assert evaluate_rule(rule_of(policies, "pap-osa", "ahi_threshold"), values) is expected
+
+
+@pytest.mark.parametrize(("gap", "expected"), [(29, False), (30, True), (31, True), (90, True), (91, False), (92, False)])
+def test_pap_reevaluation_counts_start_as_day_one(policies: dict[str, Checklist], gap: int, expected: bool) -> None:
+    """Day 31 to day 91 with the start date as day 1 is a gap of 30 to 90 days (ADR-0015)."""
+    values = {"therapy_start_date": D_START, "reevaluation_date": D_START + dt.timedelta(days=gap), "symptoms_improved": True}
+    assert evaluate_rule(rule_of(policies, "pap-osa", "reevaluation"), values) is expected
+
+
+@pytest.mark.parametrize(
+    ("inpatient", "test_offset", "symptoms", "expected"),
+    [
+        (False, None, True, True),  # outpatient tested while symptomatic
+        (False, None, False, False),  # outpatient tested with no symptoms noted
+        (False, None, None, None),
+        (True, -2, None, True),  # inpatient tested 2 days before discharge
+        (True, 0, None, True),
+        (True, -3, None, False),  # 3 days before discharge is outside "within 2 days"
+        (True, 1, None, False),  # after discharge
+        (True, None, None, None),  # discharge-relative timing unknown
+        (None, -1, True, True),  # setting unknown, both readings satisfied
+        (None, -1, None, None),
+    ],
+)
+def test_oxygen_time_of_need_by_setting(
+    policies: dict[str, Checklist],
+    inpatient: bool | None,
+    test_offset: int | None,
+    symptoms: bool | None,
+    expected: bool | None,
+) -> None:
+    """Inpatient: test within 2 days before discharge (L33797). Outpatient: symptoms noted (NCD 240.2)."""
+    values = {
+        "practitioner_ordered_and_reviewed": True,
+        "rx_from_inpatient_stay": inpatient,
+        "test_date": None if test_offset is None else D_START + dt.timedelta(days=test_offset),
+        "discharge_date": None if test_offset is None else D_START,
+        "symptoms_noted_at_test": symptoms,
+    }
+    assert evaluate_rule(rule_of(policies, "home-oxygen", "ordered_and_evaluated"), values) is expected
+
+
+@pytest.mark.parametrize(
+    ("score", "verbal", "expected"),
+    [
+        (4, None, True),
+        (3, None, False),
+        (None, "moderate", True),  # verbal rating scale, accepted by the LCD footnote
+        (None, "severe", True),
+        (None, "mild", False),
+        (None, None, None),  # e.g. only a disability scale recorded
+        (3, "moderate", False),  # a numeric score decides when both are recorded
+    ],
+)
+def test_facet_moderate_pain_numeric_or_verbal(
+    policies: dict[str, Checklist], score: int | None, verbal: str | None, expected: bool | None
+) -> None:
+    """Moderate pain is 4+ on 0 to 10, or a verbal "moderate"/"severe" rating (ADR-0015)."""
+    values = {
+        "pain_score": score,
+        "pain_severity_verbal": verbal,
+        "pain_is_axial": True,
+        "functional_deficit_documented": True,
+    }
+    assert evaluate_rule(rule_of(policies, "facet-joint", "pain_and_function"), values) is expected
+
+
+@pytest.mark.parametrize(
+    ("radiculopathy", "claudication", "expected"),
+    [(False, False, True), (False, True, False), (True, False, False), (False, None, None)],
+)
+def test_facet_neurogenic_claudication_counts(
+    policies: dict[str, Checklist], radiculopathy: bool, claudication: bool | None, expected: bool | None
+) -> None:
+    """Untreated neurogenic claudication fails the criterion, as the clause says."""
+    values = {"untreated_radiculopathy": radiculopathy, "untreated_neurogenic_claudication": claudication}
+    assert evaluate_rule(rule_of(policies, "facet-joint", "no_untreated_radiculopathy"), values) is expected
+
+
+@pytest.mark.parametrize(
+    ("blocks", "duration_ok", "expected"),
+    [(2, True, True), (2, None, None), (2, False, False), (1, True, False)],
+)
+def test_facet_block_relief_must_last_as_expected(
+    policies: dict[str, Checklist], blocks: int, duration_ok: bool | None, expected: bool | None
+) -> None:
+    """Relief must be sustained, lasting as expected for the agent used (L38841)."""
+    values = {"blocks_with_80pct_relief": blocks, "relief_duration_consistent_with_agent": duration_ok}
+    assert evaluate_rule(rule_of(policies, "facet-joint", "diagnostic_block_relief"), values) is expected
+
+
 @pytest.fixture(scope="module")
 def export(mcd_export_dir: Path) -> MCDExport:
     """One cached reader over the downloaded export."""

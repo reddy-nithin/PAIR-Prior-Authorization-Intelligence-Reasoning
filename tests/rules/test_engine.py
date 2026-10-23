@@ -97,8 +97,8 @@ def test_no_evidence_is_insufficient_everywhere(policies: dict[str, Checklist]) 
     ],
 )
 def test_ahi_boundaries(policies: dict[str, Checklist], ahi: float, events: int | None, symptoms: list[str] | None, expected: CriterionStatus) -> None:
-    """AHI 15 / 14 / 5 boundaries with their minimum event counts (LCD L33718)."""
-    evidence = [ev("ahi_threshold", "ahi", ahi)]
+    """AHI 15 / 14 / 5 boundaries with their minimum event counts on a short recording (LCD L33718)."""
+    evidence = [ev("ahi_threshold", "ahi", ahi), ev("ahi_threshold", "sleep_or_recording_hours", 1.5)]
     if events is not None:
         evidence.append(ev("ahi_threshold", "event_count", events))
     if symptoms is not None:
@@ -229,7 +229,8 @@ def oxygen_base() -> list[Evidence]:
     """Home-oxygen evidence meeting everything except the blood-gas groups."""
     return [
         ev("ordered_and_evaluated", "practitioner_ordered_and_reviewed", True),
-        ev("ordered_and_evaluated", "tested_at_time_of_need", True),
+        ev("ordered_and_evaluated", "rx_from_inpatient_stay", False),
+        ev("ordered_and_evaluated", "symptoms_noted_at_test", True),
         ev("qualified_tester", "tested_by_qualified_provider", True),
         ev("home_benefit", "expected_to_improve", True),
     ]
@@ -269,6 +270,7 @@ def facet_base() -> list[Evidence]:
         ev("duration_and_conservative_care", "pain_duration_months", 7),
         ev("duration_and_conservative_care", "conservative_care_failed", True),
         ev("no_untreated_radiculopathy", "untreated_radiculopathy", False, text="no radicular symptoms"),
+        ev("no_untreated_radiculopathy", "untreated_neurogenic_claudication", False, text="no neurogenic claudication"),
         ev("no_other_pathology", "other_pathology_found", False),
     ]
 
@@ -280,11 +282,12 @@ def test_facet_diagnostic_only_skips_block_relief(policies: dict[str, Checklist]
     assert verdict.overall is expected
 
 
-def test_pain_score_four_is_moderate(policies: dict[str, Checklist]) -> None:
-    """PAIR reads 'moderate' as 4 or more on 0 to 10 (pending clinician check)."""
-    evidence = [e for e in facet_base() if e.variable != "pain_score"] + [ev("pain_and_function", "pain_score", 3)]
+@pytest.mark.parametrize(("score", "expected"), [(3, UNMET), (4, MET)])
+def test_pain_score_four_is_moderate(policies: dict[str, Checklist], score: int, expected: CriterionStatus) -> None:
+    """PAIR reads 'moderate' as 4 or more on 0 to 10 (ADR-0015, Boonstra et al. 2014)."""
+    evidence = [e for e in facet_base() if e.variable != "pain_score"] + [ev("pain_and_function", "pain_score", score)]
     verdict = run_rules(policies["facet-joint"], evidence, {"diagnostic_only": True}, gap_message)
-    assert status_of(verdict, "pain_and_function") is UNMET
+    assert status_of(verdict, "pain_and_function") is expected
 
 
 def test_trace_names_rule_values_and_spans(policies: dict[str, Checklist]) -> None:

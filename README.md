@@ -31,6 +31,13 @@ PAIR is built and tested on synthetic patients only. No real patient data goes i
 | Home oxygen | NCD 240.2, LCD L33797 | Group I testing at rest and Group II; not sleep or exercise testing, not Group III |
 | Facet joint interventions | LCD L38841 (WPS) | General indications and the diagnostic-block requirement before initial RFA |
 
+### Known limits
+
+The Step 7 rule review ([docs/audit/rule-review.md](docs/audit/rule-review.md), [ADR-0015](docs/decisions/0015-rule-review-changes.md)) left these out of the rules on purpose:
+
+- **PAP:** a re-evaluation after day 91 that shows benefit restarts coverage from that date under L33718. PAIR reports it as outside the window. The 120-day deadline for an E0470 swap and the trial pause for a hospital or nursing-facility stay aren't modeled.
+- **Facet joint:** PAIR doesn't check that the same pain scale was used at baseline, after each diagnostic block and at each follow-up, or that a disability scale was taken at baseline (L38841 footnote). It doesn't check the 2-week minimum between the two diagnostic blocks, and it doesn't apply the exception for radiculopathy caused by a facet joint synovial cyst.
+
 ## Not legal or medical advice
 
 PAIR is a research prototype. Review any letter it drafts before sending it, and contact your State Health Insurance Assistance Program (SHIP) for free help with an appeal.

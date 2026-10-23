@@ -92,6 +92,13 @@ def test_absent_units_list_topics_and_forbidden_patterns() -> None:
     assert spec.forbidden
 
 
+def test_facet_vague_pain_is_not_a_verbal_rating() -> None:
+    """A verbal "moderate"/"severe" now meets the rule (ADR-0015), so the vague phrase can't be one."""
+    outcome = next(u for u in UNITS["facet-joint"] if u.name == "pain_and_function").states["vague"]({})
+    phrase = next(p.phrase for p in outcome.plants if p.variable == "pain_score").lower()
+    assert not any(word in phrase for word in ("mild", "moderate", "severe"))
+
+
 def test_unknown_state_or_policy_raises() -> None:
     """Bad states and unplanned policies fail loudly."""
     checklist = CHECKLISTS["pap-osa"]

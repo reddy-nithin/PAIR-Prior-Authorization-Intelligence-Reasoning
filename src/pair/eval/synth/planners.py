@@ -286,12 +286,15 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
             "present": lambda d: _out(
                 {ORD: MET},
                 _p(ORD, "practitioner_ordered_and_reviewed", "I ordered resting oximetry and reviewed the results", True, CLINIC),
-                _p(ORD, "tested_at_time_of_need", "tested during this visit while short of breath", True, CLINIC),
+                _p(ORD, "rx_from_inpatient_stay", "seen as an outpatient, no recent hospital stay", False, CLINIC),
+                _p(ORD, "symptoms_noted_at_test", "tested during this visit while short of breath", True, CLINIC),
             ),
             "failing": lambda d: _out(
                 {ORD: UNMET},
                 _p(ORD, "practitioner_ordered_and_reviewed", "I ordered resting oximetry and reviewed the results", True, CLINIC),
-                _p(ORD, "tested_at_time_of_need", "test was done 6 weeks after recovery, when stable", False, CLINIC),
+                _p(ORD, "rx_from_inpatient_stay", "seen as an outpatient, no recent hospital stay", False, CLINIC),
+                _p(ORD, "symptoms_noted_at_test", "tested at a routine visit with no shortness of breath or other symptoms",
+                   False, CLINIC),
             ),
             "absent": lambda d: _out({ORD: INSUFFICIENT}),
         },
@@ -402,12 +405,12 @@ FACET_UNITS: tuple[Unit, ...] = (
             "vague": lambda d: _out(
                 {PF: INSUFFICIENT},
                 _p(PF, "pain_is_axial", "axial low back pain", True, CLINIC),
-                _p(PF, "pain_score", "moderate pain", None, CLINIC),
+                _p(PF, "pain_score", "bothersome back pain", None, CLINIC),
                 _p(PF, "functional_deficit_documented", "limits walking and work (ODI 42%)", True, CLINIC),
             ),
         },
-        "a pain score or how the pain limits function",
-        r"\b\d+\s*/\s*10\b|ODI",
+        "a pain score or rating (mild, moderate, severe) or how the pain limits function",
+        r"\b\d+\s*/\s*10\b|ODI|\b(?:mild|moderate|severe)(?:ly)?\b[^.]{0,30}\bpain\b",
     ),
     Unit(
         DUR,
@@ -433,7 +436,9 @@ FACET_UNITS: tuple[Unit, ...] = (
         (RAD,),
         {
             "present": lambda d: _out(
-                {RAD: MET}, _p(RAD, "untreated_radiculopathy", "No radicular symptoms", False, CLINIC)
+                {RAD: MET},
+                _p(RAD, "untreated_radiculopathy", "No radicular symptoms", False, CLINIC),
+                _p(RAD, "untreated_neurogenic_claudication", "no neurogenic claudication", False, CLINIC),
             ),
             "failing": lambda d: _out(
                 {RAD: UNMET},
@@ -441,8 +446,8 @@ FACET_UNITS: tuple[Unit, ...] = (
             ),
             "absent": lambda d: _out({RAD: INSUFFICIENT}),
         },
-        "radiating leg pain, radiculopathy or nerve symptoms",
-        r"radicul|radiat|sciatica",
+        "radiating leg pain, radiculopathy, neurogenic claudication or nerve symptoms",
+        r"radicul|radiat|sciatica|claudicat",
     ),
     Unit(
         PATH,
@@ -466,6 +471,8 @@ FACET_UNITS: tuple[Unit, ...] = (
             "present": lambda d: _out(
                 {BLK: MET},
                 _p(BLK, "blocks_with_80pct_relief", "Two medial branch blocks each gave 85% relief", 2, REPORT),
+                _p(BLK, "relief_duration_consistent_with_agent", "relief lasted as long as expected for the anesthetic used",
+                   True, REPORT),
             ),
             "failing": lambda d: _out(
                 {BLK: UNMET},
