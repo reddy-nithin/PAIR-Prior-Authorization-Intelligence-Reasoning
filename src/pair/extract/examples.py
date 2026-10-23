@@ -42,10 +42,12 @@ _OXYGEN_INPATIENT_TEXT = (
 _FACET_TEXT = (
     "SYNTHETIC EXAMPLE. Pain clinic 05/10/2026: chronic axial low back pain for 8 months, rated 7/10, "
     "described as severe, "
-    "limits walking and work (ODI 42%). Failed 12 weeks of physical therapy and NSAIDs. "
-    "No radicular symptoms; straight leg raise negative; no neurogenic claudication. "
+    "limits walking and work (ODI 42%), taken as the baseline disability scale. "
+    "Failed 12 weeks of physical therapy and NSAIDs. "
+    "No radicular symptoms; straight leg raise negative; no neurogenic claudication; no synovial cyst on MRI. "
     "MRI: facet arthropathy L4-5, no fracture, tumor or infection. "
-    "Two medial branch blocks each gave 85% relief, lasting about 6 hours as expected for bupivacaine."
+    "Two medial branch blocks each gave 85% relief, lasting about 6 hours as expected for bupivacaine. "
+    "First block 03/02/2026, second block 03/23/2026."
 )
 
 EXAMPLES: dict[str, list[Example]] = {
@@ -106,12 +108,16 @@ EXAMPLES: dict[str, list[Example]] = {
                 _x("pain_score", "rated 7/10", "7"),
                 _x("pain_severity_verbal", "described as severe", "severe"),
                 _x("functional_deficit_documented", "limits walking and work (ODI 42%)", "true"),
+                _x("disability_scale_at_baseline", "taken as the baseline disability scale", "true"),
                 _x("conservative_care_failed", "Failed 12 weeks of physical therapy and NSAIDs", "true"),
                 _x("untreated_radiculopathy", "No radicular symptoms", "false"),
                 _x("untreated_neurogenic_claudication", "no neurogenic claudication", "false"),
+                _x("radiculopathy_from_synovial_cyst", "no synovial cyst on MRI", "false"),
                 _x("other_pathology_found", "no fracture, tumor or infection", "false"),
                 _x("blocks_with_80pct_relief", "Two medial branch blocks each gave 85% relief", "2"),
                 _x("relief_duration_consistent_with_agent", "lasting about 6 hours as expected for bupivacaine", "true"),
+                _x("first_block_date", "First block 03/02/2026", "2026-03-02"),
+                _x("second_block_date", "second block 03/23/2026", "2026-03-23"),
             ],
         )
     ],

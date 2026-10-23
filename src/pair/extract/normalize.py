@@ -27,11 +27,15 @@ _MONTHS: dict[str, int] = {
     )
     for name in names
 }  # fmt: skip
+_HUNDRED_SCALE = re.compile(r"\d\s*mm\b|/\s*100\b|0\s*(?:-|–|to)\s*100\b", re.IGNORECASE)
+"""A 0 to 100 pain scale: millimetres on a VAS line (not ``mmHg``), ``/100`` or a stated range."""
 _ISO = re.compile(r"\b(\d{4})-(\d{1,2})-(\d{1,2})\b")
 _US = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
 _MONTH_FIRST = re.compile(r"\b([a-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b")
 _DAY_FIRST = re.compile(r"\b(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)\.?,?\s+(\d{4})\b")
 _TRUE: frozenset[str] = frozenset({"true", "yes", "y", "present", "documented", "met", "positive"})
+PAIN_SCORE_VARIABLES: frozenset[str] = frozenset({"pain_score"})
+"""Rule variables read on a 0 to 10 pain scale."""
 _FALSE: frozenset[str] = frozenset({"false", "no", "n", "absent", "none", "not documented", "negative"})
 
 
@@ -51,6 +55,19 @@ def normalize(var_type: VariableType, raw: Any) -> EvidenceValue:
     if var_type is VariableType.BOOL:
         return _to_bool(text)
     return text
+
+
+def pain_on_ten_point_scale(value: EvidenceValue, span: str) -> EvidenceValue:
+    """Put a pain score on the 0 to 10 scale the rules use (ADR-0015).
+
+    A 0 to 100 VAS (``35 mm``, ``62/100``, ``VAS (0-100) 48``) is divided by 10. A score above
+    10 with no stated scale is unusable, so it becomes ``None`` rather than a false pass.
+    """
+    if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 10:
+        return value
+    if _HUNDRED_SCALE.search(span):
+        return value / 10
+    return None
 
 
 def _to_number(text: str) -> int | float | None:

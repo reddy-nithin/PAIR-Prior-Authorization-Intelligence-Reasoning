@@ -189,9 +189,9 @@ def test_adherence_threshold(policies: dict[str, Checklist], pct: float, expecte
     assert status_of(verdict, "adherence") is expected
 
 
-@pytest.mark.parametrize(("days", "expected"), [(29, UNMET), (30, MET), (90, MET), (91, UNMET)])
+@pytest.mark.parametrize(("days", "expected"), [(29, UNMET), (30, MET), (90, MET), (91, MET)])
 def test_reevaluation_window(policies: dict[str, Checklist], days: int, expected: CriterionStatus) -> None:
-    """Re-evaluation on the 31st to 91st day after starting therapy (day index 30 to 90)."""
+    """Re-evaluation no sooner than the 31st day (gap 30); a later visit still counts (ADR-0015)."""
     evidence = [
         ev("reevaluation", "therapy_start_date", D0),
         ev("reevaluation", "reevaluation_date", D0 + dt.timedelta(days=days)),
@@ -267,6 +267,7 @@ def facet_base() -> list[Evidence]:
         ev("pain_and_function", "pain_score", 6),
         ev("pain_and_function", "pain_is_axial", True),
         ev("pain_and_function", "functional_deficit_documented", True),
+        ev("pain_and_function", "disability_scale_at_baseline", True),
         ev("duration_and_conservative_care", "pain_duration_months", 7),
         ev("duration_and_conservative_care", "conservative_care_failed", True),
         ev("no_untreated_radiculopathy", "untreated_radiculopathy", False, text="no radicular symptoms"),

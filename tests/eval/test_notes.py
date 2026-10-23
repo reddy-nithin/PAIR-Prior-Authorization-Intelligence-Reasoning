@@ -173,3 +173,15 @@ def test_prompt_names_pronouns_for_the_profile_sex(sex: str, pronouns: str) -> N
     """The writer is told which pronouns to use (pap-osa-04 called a woman "He")."""
     profile = PROFILE.model_copy(update={"sex": sex})
     assert f"Refer to the patient as {pronouns}" in build_prompt(spec_with(), profile, "PAP")
+
+
+def test_dates_in_facet_notes_are_not_pain_scores() -> None:
+    """Facet notes are dated now, and "04/10/2026" is not a pain score of 4/10."""
+    spec = spec_with("facet-joint", pain_and_function="absent")
+    texts = {p.doc_id: "" for p in spec.plants}
+    for plant in spec.plants:
+        texts[plant.doc_id] += plant.phrase + ". "
+    texts["clinic"] += "Seen 04/10/2026."
+    assert check_notes(spec, texts) == []
+    texts["clinic"] += " Pain is 4/10."
+    assert check_notes(spec, texts)

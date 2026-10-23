@@ -105,7 +105,8 @@ D_START = dt.date(2026, 3, 1)
         (10, 1.5, 9, SYMPTOM, False),
         (10, 1.5, 10, SYMPTOM, True),
         (10, 6.0, None, None, None),
-        (14.5, 6.0, None, SYMPTOM, False),  # between the LCD's two bands (open question in rule-review.md)
+        (14.5, 6.0, None, SYMPTOM, True),  # between the LCD's integer bands: read as the lower band (ADR-0015)
+        (14.5, 6.0, None, None, None),
         (4, 6.0, None, SYMPTOM, False),
     ],
 )
@@ -122,9 +123,11 @@ def test_pap_event_minimum_applies_only_under_two_hours(
     assert evaluate_rule(rule_of(policies, "pap-osa", "ahi_threshold"), values) is expected
 
 
-@pytest.mark.parametrize(("gap", "expected"), [(29, False), (30, True), (31, True), (90, True), (91, False), (92, False)])
+@pytest.mark.parametrize(
+    ("gap", "expected"), [(29, False), (30, True), (31, True), (90, True), (91, True), (92, True), (140, True)]
+)
 def test_pap_reevaluation_counts_start_as_day_one(policies: dict[str, Checklist], gap: int, expected: bool) -> None:
-    """Day 31 to day 91 with the start date as day 1 is a gap of 30 to 90 days (ADR-0015)."""
+    """No sooner than day 31 (start = day 1, gap 30). A visit after day 91 still counts, with coverage from its date."""
     values = {"therapy_start_date": D_START, "reevaluation_date": D_START + dt.timedelta(days=gap), "symptoms_improved": True}
     assert evaluate_rule(rule_of(policies, "pap-osa", "reevaluation"), values) is expected
 
@@ -163,51 +166,86 @@ def test_oxygen_time_of_need_by_setting(
 
 
 @pytest.mark.parametrize(
-    ("score", "verbal", "expected"),
+    ("score", "verbal", "baseline_disability", "expected"),
     [
-        (4, None, True),
-        (3, None, False),
-        (None, "moderate", True),  # verbal rating scale, accepted by the LCD footnote
-        (None, "severe", True),
-        (None, "mild", False),
-        (None, None, None),  # e.g. only a disability scale recorded
-        (3, "moderate", False),  # a numeric score decides when both are recorded
+        (4, None, True, True),
+        (3, None, True, False),
+        (None, "moderate", True, True),  # verbal rating scale, accepted by the LCD footnote
+        (None, "severe", True, True),
+        (None, "mild", True, False),
+        (None, None, True, None),  # e.g. only a disability scale recorded
+        (3, "moderate", True, False),  # a numeric score decides when both are recorded
+        (6, None, None, None),  # the footnote's baseline disability scale isn't documented
+        (6, None, False, False),
     ],
 )
 def test_facet_moderate_pain_numeric_or_verbal(
-    policies: dict[str, Checklist], score: int | None, verbal: str | None, expected: bool | None
+    policies: dict[str, Checklist],
+    score: int | None,
+    verbal: str | None,
+    baseline_disability: bool | None,
+    expected: bool | None,
 ) -> None:
-    """Moderate pain is 4+ on 0 to 10, or a verbal "moderate"/"severe" rating (ADR-0015)."""
+    """Moderate pain is 4+ on 0 to 10 or a verbal "moderate"/"severe" rating, with a baseline disability scale."""
     values = {
         "pain_score": score,
         "pain_severity_verbal": verbal,
         "pain_is_axial": True,
         "functional_deficit_documented": True,
+        "disability_scale_at_baseline": baseline_disability,
     }
     assert evaluate_rule(rule_of(policies, "facet-joint", "pain_and_function"), values) is expected
 
 
 @pytest.mark.parametrize(
-    ("radiculopathy", "claudication", "expected"),
-    [(False, False, True), (False, True, False), (True, False, False), (False, None, None)],
+    ("radiculopathy", "cyst", "claudication", "expected"),
+    [
+        (False, None, False, True),
+        (False, None, True, False),
+        (True, False, False, False),
+        (True, True, False, True),  # radiculopathy from a facet synovial cyst is excepted
+        (True, None, False, None),  # the cause isn't stated
+        (False, None, None, None),
+    ],
 )
-def test_facet_neurogenic_claudication_counts(
-    policies: dict[str, Checklist], radiculopathy: bool, claudication: bool | None, expected: bool | None
+def test_facet_radiculopathy_claudication_and_cyst_exception(
+    policies: dict[str, Checklist],
+    radiculopathy: bool,
+    cyst: bool | None,
+    claudication: bool | None,
+    expected: bool | None,
 ) -> None:
-    """Untreated neurogenic claudication fails the criterion, as the clause says."""
-    values = {"untreated_radiculopathy": radiculopathy, "untreated_neurogenic_claudication": claudication}
+    """Untreated radiculopathy or claudication fails, except radiculopathy caused by a facet synovial cyst."""
+    values = {
+        "untreated_radiculopathy": radiculopathy,
+        "radiculopathy_from_synovial_cyst": cyst,
+        "untreated_neurogenic_claudication": claudication,
+    }
     assert evaluate_rule(rule_of(policies, "facet-joint", "no_untreated_radiculopathy"), values) is expected
 
 
 @pytest.mark.parametrize(
-    ("blocks", "duration_ok", "expected"),
-    [(2, True, True), (2, None, None), (2, False, False), (1, True, False)],
+    ("blocks", "duration_ok", "spacing", "expected"),
+    [
+        (2, True, 21, True),
+        (2, None, 21, None),
+        (2, False, 21, False),
+        (1, True, 21, False),
+        (2, True, 14, True),  # "a minimum of 2 weeks after the initial diagnostic procedure"
+        (2, True, 13, False),
+        (2, True, None, None),
+    ],
 )
-def test_facet_block_relief_must_last_as_expected(
-    policies: dict[str, Checklist], blocks: int, duration_ok: bool | None, expected: bool | None
+def test_facet_block_relief_sustained_and_two_weeks_apart(
+    policies: dict[str, Checklist], blocks: int, duration_ok: bool | None, spacing: int | None, expected: bool | None
 ) -> None:
-    """Relief must be sustained, lasting as expected for the agent used (L38841)."""
-    values = {"blocks_with_80pct_relief": blocks, "relief_duration_consistent_with_agent": duration_ok}
+    """Relief lasts as expected for the agent, and the second block is at least 2 weeks after the first (L38841)."""
+    values = {
+        "blocks_with_80pct_relief": blocks,
+        "relief_duration_consistent_with_agent": duration_ok,
+        "first_block_date": None if spacing is None else D_START,
+        "second_block_date": None if spacing is None else D_START + dt.timedelta(days=spacing),
+    }
     assert evaluate_rule(rule_of(policies, "facet-joint", "diagnostic_block_relief"), values) is expected
 
 

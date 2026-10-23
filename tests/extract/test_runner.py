@@ -262,3 +262,19 @@ def test_malformed_items_count_as_ungrounded_and_nulls_as_empty() -> None:
     assert result.n_dropped == 1
     assert result.n_empty == 1
     assert [e.variable for e in result.evidence] == ["event_count"]
+
+
+def test_pain_score_on_a_hundred_point_vas_is_rescaled() -> None:
+    """A "VAS 35 mm" span binds 3.5, so it doesn't pass the 0 to 10 rule at 35 (ADR-0015)."""
+    note = "Pain clinic: axial low back pain, VAS 35 mm."
+    start = note.find("VAS 35 mm")
+    extraction = lx_data.Extraction(
+        "pain_score",
+        "VAS 35 mm",
+        char_interval=lx_data.CharInterval(start_pos=start, end_pos=start + 9),
+        attributes={"value": "35", "status": "asserted"},
+    )
+    result = extract_evidence(
+        note, "note-1", CHECKLISTS["facet-joint"], LLMConfig.from_env({}), extract_fn=FakeExtract([extraction])
+    )
+    assert [e.value for e in result.evidence] == [3.5]

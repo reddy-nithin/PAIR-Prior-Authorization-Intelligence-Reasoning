@@ -27,11 +27,11 @@ pap-osa:
       about mask fit, comfort settings, or other treatment options.
   reevaluation:
     insufficient: >-
-      Ask your doctor's office for the note from your follow-up visit between day 31 and day 91
-      after you started PAP. It should say whether PAP is helping you.
+      Ask your doctor's office for the note from your follow-up visit on or after day 31 after you
+      started PAP. It should say whether PAP is helping you.
     unmet: >-
-      Your follow-up visit was outside the day 31 to day 91 window, or the note says PAP isn't
-      helping. Ask your doctor what to do next.
+      Your follow-up visit was before day 31, or the note says PAP isn't helping. A new visit
+      that shows PAP helps can restart coverage from that date. Ask your doctor what to do next.
 home-oxygen:
   ordered_and_evaluated:
     insufficient: >-
@@ -72,9 +72,8 @@ home-oxygen:
 facet-joint:
   pain_and_function:
     insufficient: >-
-      Ask your doctor for notes that rate your pain, on a 0 to 10 scale or as mild, moderate or
-      severe, say it is mainly in your neck or low back, and describe how it limits your daily
-      activities.
+      Ask your doctor for notes that rate your pain (0 to 10, or mild, moderate or severe), say it
+      is mainly in your neck or low back, and show a disability score taken before treatment.
     unmet: >-
       Your records show pain that is milder than this rule requires, or not mainly in the neck or
       low back. Ask your doctor about other treatments.
@@ -91,7 +90,7 @@ facet-joint:
       leg pain when you walk (neurogenic claudication), and if so, how it was treated.
     unmet: >-
       Your records show untreated nerve pain going down an arm or leg, or untreated leg pain
-      when you walk. Ask your doctor about treating that first.
+      when you walk. Ask your doctor about treating that first, or whether a joint cyst causes it.
   no_other_pathology:
     insufficient: >-
       Ask for your exam or imaging notes. They should say no other cause, like a fracture, tumor
@@ -101,8 +100,8 @@ facet-joint:
       cause.
   diagnostic_block_relief:
     insufficient: >-
-      Ask for the notes from your diagnostic nerve blocks. They should show at least 2 blocks,
-      each giving 80% or more pain relief, and how long the relief lasted.
+      Ask for the notes from your diagnostic nerve blocks. They should show the date of each of at
+      least 2 blocks, each giving 80% or more pain relief, and how long the relief lasted.
     unmet: >-
-      Your records show fewer than 2 nerve blocks with 80% or more relief, or relief that didn't
-      last as long as expected. Ask your doctor about other treatment options.
+      Your records show fewer than 2 nerve blocks with 80% or more relief, relief that didn't last
+      as long as expected, or blocks less than 2 weeks apart. Ask your doctor what to do next.

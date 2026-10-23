@@ -132,6 +132,7 @@ def _pap_dates(rng: random.Random) -> dict[str, dt.date]:
         "start": start,
         "reeval": start + dt.timedelta(days=rng.randint(40, 80)),
         "late_reeval": start + dt.timedelta(days=rng.randint(110, 140)),
+        "early_reeval": start + dt.timedelta(days=20),
         "denial": start + dt.timedelta(days=rng.randint(95, 105)),
     }
 
@@ -259,7 +260,7 @@ PAP_UNITS: tuple[Unit, ...] = (
             "out_of_window": lambda d: _out(
                 {REEVAL: UNMET},
                 _p(REEVAL, "therapy_start_date", f"CPAP started {_d(d['start'])}", d["start"], CLINIC),
-                _p(REEVAL, "reevaluation_date", f"Follow-up visit {_d(d['late_reeval'])}", d["late_reeval"], CLINIC),
+                _p(REEVAL, "reevaluation_date", f"Follow-up visit {_d(d['early_reeval'])}", d["early_reeval"], CLINIC),
                 _p(REEVAL, "symptoms_improved", "sleepiness much improved on CPAP", True, CLINIC),
             ),
         },
@@ -386,7 +387,12 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
 
 def _facet_dates(rng: random.Random) -> dict[str, dt.date]:
     visit = dt.date(2026, 1, 12) + dt.timedelta(days=rng.randint(0, 160))
-    return {"visit": visit, "denial": visit + dt.timedelta(days=rng.randint(10, 30))}
+    return {
+        "visit": visit,
+        "denial": visit + dt.timedelta(days=rng.randint(10, 30)),
+        "block1": visit - dt.timedelta(days=60),
+        "block2": visit - dt.timedelta(days=39),
+    }
 
 
 PF = "pain_and_function"
@@ -405,6 +411,7 @@ FACET_UNITS: tuple[Unit, ...] = (
                 _p(PF, "pain_is_axial", "axial low back pain", True, CLINIC),
                 _p(PF, "pain_score", "rated 7/10", 7, CLINIC),
                 _p(PF, "functional_deficit_documented", "limits walking and work (ODI 42%)", True, CLINIC),
+                _p(PF, "disability_scale_at_baseline", "baseline Oswestry Disability Index on file", True, CLINIC),
             ),
             "failing": lambda d: _out(
                 {PF: UNMET},
@@ -421,7 +428,7 @@ FACET_UNITS: tuple[Unit, ...] = (
             ),
         },
         "a pain score or rating (mild, moderate, severe) or how the pain limits function",
-        r"\b\d+\s*/\s*10\b|ODI|\b(?:mild|moderate|severe)(?:ly)?\b[^.]{0,30}\bpain\b",
+        r"\b\d+\s*/\s*10\b(?!/)|ODI|\b(?:mild|moderate|severe)(?:ly)?\b[^.]{0,30}\bpain\b",
     ),
     Unit(
         DUR,
@@ -454,6 +461,7 @@ FACET_UNITS: tuple[Unit, ...] = (
             "failing": lambda d: _out(
                 {RAD: UNMET},
                 _p(RAD, "untreated_radiculopathy", "untreated L5 radiculopathy with pain below the knee", True, CLINIC),
+                _p(RAD, "radiculopathy_from_synovial_cyst", "no synovial cyst on MRI", False, REPORT),
             ),
             "absent": lambda d: _out({RAD: INSUFFICIENT}),
         },
@@ -484,6 +492,8 @@ FACET_UNITS: tuple[Unit, ...] = (
                 _p(BLK, "blocks_with_80pct_relief", "Two medial branch blocks each gave 85% relief", 2, REPORT),
                 _p(BLK, "relief_duration_consistent_with_agent", "relief lasted as long as expected for the anesthetic used",
                    True, REPORT),
+                _p(BLK, "first_block_date", f"first block {_d(d['block1'])}", d["block1"], REPORT),
+                _p(BLK, "second_block_date", f"second block {_d(d['block2'])}", d["block2"], REPORT),
             ),
             "failing": lambda d: _out(
                 {BLK: UNMET},

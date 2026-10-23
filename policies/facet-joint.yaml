@@ -16,19 +16,25 @@ criteria:
   - id: pain_and_function
     text: >-
       Moderate to severe neck or low back pain that limits function, measured on a pain or
-      disability scale. PAIR reads "moderate" as 4 or more on a 0 to 10 scale, or a verbal rating
-      of moderate or severe (Boonstra et al. 2014; ADR-0015)
+      disability scale, with a disability scale taken at baseline. PAIR reads "moderate" as 4 or
+      more on a 0 to 10 scale, or a verbal rating of moderate or severe (Boonstra et al. 2014;
+      ADR-0015)
     clause: >-
       Moderate to severe chronic neck or low back pain, predominantly axial, that causes
       functional deficit measured on pain or disability scale
     source_id: L38841
     evidence_type: encounter
-    variables: {pain_score: number, pain_severity_verbal: text, pain_is_axial: bool, functional_deficit_documented: bool}
+    variables:
+      pain_score: number
+      pain_severity_verbal: text
+      pain_is_axial: bool
+      functional_deficit_documented: bool
+      disability_scale_at_baseline: bool
     # The `is None` pair only routes to the verbal rating when no number exists; with neither, it stays Unknown.
     rule: >-
       ((pain_score is not None and pain_score >= 4)
       or (pain_score is None and pain_severity_verbal in ['moderate', 'severe']))
-      and pain_is_axial and functional_deficit_documented
+      and pain_is_axial and functional_deficit_documented and disability_scale_at_baseline
     critical: true
   - id: duration_and_conservative_care
     text: Pain for at least 3 months, and treatments like physical therapy or medication didn't work
@@ -41,14 +47,21 @@ criteria:
     rule: "pain_duration_months >= 3 and conservative_care_failed"
     critical: true
   - id: no_untreated_radiculopathy
-    text: No untreated nerve-root pain (radiculopathy) or neurogenic claudication
+    text: >-
+      No untreated nerve-root pain (radiculopathy) or neurogenic claudication. Radiculopathy caused
+      by a facet joint synovial cyst doesn't count against you
     clause: >-
       Absence of untreated radiculopathy or neurogenic claudication (except for radiculopathy
       caused by facet joint synovial cyst)
     source_id: L38841
     evidence_type: encounter
-    variables: {untreated_radiculopathy: bool, untreated_neurogenic_claudication: bool}
-    rule: "not untreated_radiculopathy and not untreated_neurogenic_claudication"
+    variables:
+      untreated_radiculopathy: bool
+      radiculopathy_from_synovial_cyst: bool
+      untreated_neurogenic_claudication: bool
+    rule: >-
+      (not untreated_radiculopathy or radiculopathy_from_synovial_cyst)
+      and not untreated_neurogenic_claudication
     critical: false
   - id: no_other_pathology
     text: No other cause found for the pain, such as a fracture, tumor or infection
@@ -63,15 +76,23 @@ criteria:
     critical: false
   - id: diagnostic_block_relief
     text: >-
-      Before RFA, at least 2 diagnostic nerve blocks each gave 80% or more pain relief, lasting as
-      long as expected for the numbing medicine used
+      Before RFA, at least 2 diagnostic nerve blocks at least 2 weeks apart, each giving 80% or more
+      pain relief lasting as long as expected for the numbing medicine used
     clause: >-
       Initial thermal RFA: after the patient has had at least 2 medically reasonable and necessary
       diagnostic MBBs, with each one providing a consistent minimum of 80% sustained relief of
       primary (index) pain (with the duration of relief being consistent with the agent used).
     source_id: L38841
     evidence_type: therapy_history
-    variables: {blocks_with_80pct_relief: number, relief_duration_consistent_with_agent: bool}
-    rule: "blocks_with_80pct_relief >= 2 and relief_duration_consistent_with_agent"
+    variables:
+      blocks_with_80pct_relief: number
+      relief_duration_consistent_with_agent: bool
+      first_block_date: date
+      second_block_date: date
+    # Spacing: "The second diagnostic procedure may only be performed a minimum of 2 weeks after the initial
+    # diagnostic procedure." The documented-exception clause isn't modeled (README known limits).
+    rule: >-
+      blocks_with_80pct_relief >= 2 and relief_duration_consistent_with_agent
+      and days_between(first_block_date, second_block_date) >= 14
     critical: true
 logic: "pain_and_function and duration_and_conservative_care and no_untreated_radiculopathy and no_other_pathology and (diagnostic_only or diagnostic_block_relief)"

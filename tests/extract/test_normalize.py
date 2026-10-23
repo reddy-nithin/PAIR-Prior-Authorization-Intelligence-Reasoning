@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from pair.contracts import VariableType
-from pair.extract.normalize import normalize
+from pair.extract.normalize import normalize, pain_on_ten_point_scale
 
 
 @pytest.mark.parametrize(
@@ -90,3 +90,19 @@ def test_list_value_for_scalar_type_uses_first_item() -> None:
 def test_lab_names_with_digits_are_skipped() -> None:
     """Digits inside a lab name (SpO2, PaO2) aren't the value."""
     assert normalize(VariableType.NUMBER, "SpO2 87%") == 87
+
+
+@pytest.mark.parametrize(
+    ("value", "span", "expected"),
+    [
+        (7, "rated 7/10", 7),
+        (35, "VAS 35 mm", 3.5),
+        (62, "pain 62/100 on the VAS", 6.2),
+        (48, "VAS (0-100) 48", 4.8),
+        (35, "pain score 35", None),  # above 10 with no stated scale: unusable, not a pass
+        (None, "moderate pain", None),
+    ],
+)
+def test_pain_scores_are_put_on_a_ten_point_scale(value: float | None, span: str, expected: float | None) -> None:
+    """The rule reads 0 to 10, so a 0 to 100 mm VAS is divided by 10 (ADR-0015)."""
+    assert pain_on_ten_point_scale(value, span) == expected

@@ -5,12 +5,12 @@ Run 2026-10-23. The audit critic ([ADR-0013](../decisions/0013-adversarial-criti
 | # | Question | Criterion | Critic verdict | Applied |
 |---|---|---|---|---|
 | 1 | PAP event counts | `pap-osa.ahi_threshold` | change | change |
-| 2 | PAP re-evaluation window | `pap-osa.reevaluation` | keep (day 1) | keep, documented |
+| 2 | PAP re-evaluation window | `pap-osa.reevaluation` | keep (day 1) | day 1 kept; late visits count (decision 3) |
 | 3 | Facet "moderate" pain | `facet-joint.pain_and_function` | change | change |
 | 4 | Oxygen time of need | `home-oxygen.ordered_and_evaluated` | change | change |
 | 5a | Neurogenic claudication | `facet-joint.no_untreated_radiculopathy` | change | change |
 | 5b | Sustained relief | `facet-joint.diagnostic_block_relief` | change | change |
-| 5c | Same pain scale, baseline disability scale | `facet-joint.pain_and_function` | split: limit + change | limit + **uncertain** (open question) |
+| 5c | Same pain scale, baseline disability scale | `facet-joint.pain_and_function` | split: limit + change | limit + change (decision 2) |
 
 **Source limits in this run.** The critics' direct fetches of contractor pages failed: Noridian and CGS were blocked or failed DNS from the subagents. Contractor guidance below is cited from [critic-research.md](critic-research.md) §1 and §2, or from search summaries, and is marked as such. Every verdict rests on the LCD or NCD text, which was read from the MCD export.
 
@@ -28,9 +28,9 @@ Run 2026-10-23. The audit critic ([ADR-0013](../decisions/0013-adversarial-criti
 - **LCD L33718 v52** (URL above): "no sooner than the 31st day but no later than the 91st day after initiating therapy"
 - **Contractors:** Noridian's checklist and its 2016 policy reminder, and the CGS physician guide, repeat "31st to 91st day" without a counting rule (critic-research.md §2b; search summaries). The critic found no Medicare manual rule on counting days.
 - **Finding (P2 uncertain, P3 major):** the text doesn't settle day 0 versus day 1. The old rule read the start as day 1, but neither `text` nor an ADR said so, and gaps 31 and 92 were untested.
-- **Ruling:** keep day 1, so the window is a gap of 30 to 90 days. The ordinal "31st day" and the 30-day adherence window inside "the first three (3) months" favor it. The readings differ only at gaps of exactly 30 (met here) and 91 (unmet here). The `text` field now states the convention.
-- **Boundary tests:** `test_pap_reevaluation_counts_start_as_day_one` (gaps 29, 30, 31, 90, 91, 92).
-- **Raised (P1 major), listed as a known limit:** "If the treating practitioner re-evaluation does not occur until after the 91st day but the evaluation demonstrates that the beneficiary is benefiting from PAP therapy as defined in criteria 1 and 2 above, continued coverage of the PAP device will commence with the date of that re-evaluation." PAIR still reports a late visit as outside the window.
+- **Ruling:** keep day 1, so "no sooner than the 31st day" is a gap of 30 days or more. The ordinal "31st day" and the 30-day adherence window inside "the first three (3) months" favor it. The `text` field now states the convention.
+- **Boundary tests:** `test_pap_reevaluation_counts_start_as_day_one` (gaps 29, 30, 31, 90, 91, 92, 140).
+- **Raised (P1 major), now modeled (decision 3):** "If the treating practitioner re-evaluation does not occur until after the 91st day but the evaluation demonstrates that the beneficiary is benefiting from PAP therapy as defined in criteria 1 and 2 above, continued coverage of the PAP device will commence with the date of that re-evaluation." A late visit that shows benefit is now met, and the criterion text says coverage restarts from that date.
 
 ## 3. Facet "moderate" pain: change
 
@@ -55,22 +55,24 @@ Run 2026-10-23. The audit critic ([ADR-0013](../decisions/0013-adversarial-criti
 
 **LCD L38841 v20** (URL above) for all three.
 
-**5a. Neurogenic claudication: change.** "Absence of untreated radiculopathy or neurogenic claudication (except for radiculopathy caused by facet joint synovial cyst)". The rule checked only radiculopathy, so a stenosis patient with untreated claudication came out met (P2 blocker). New rule: `not untreated_radiculopathy and not untreated_neurogenic_claudication`. Tests: `test_facet_neurogenic_claudication_counts`.
+**5a. Neurogenic claudication: change.** "Absence of untreated radiculopathy or neurogenic claudication (except for radiculopathy caused by facet joint synovial cyst)". The rule checked only radiculopathy, so a stenosis patient with untreated claudication came out met (P2 blocker). New rule: `not untreated_radiculopathy and not untreated_neurogenic_claudication`. Tests: `test_facet_radiculopathy_claudication_and_cyst_exception`.
 
-**5b. Sustained relief: change.** "Initial thermal RFA: after the patient has had at least 2 medically reasonable and necessary diagnostic MBBs, with each one providing a consistent minimum of 80% sustained relief of primary (index) pain (with the duration of relief being consistent with the agent used)." The rule counted blocks only (P2 blocker). New rule: `blocks_with_80pct_relief >= 2 and relief_duration_consistent_with_agent`. The new variable is bound only when the record states it; PAIR keeps no drug-duration table. Tests: `test_facet_block_relief_must_last_as_expected`.
+**5b. Sustained relief: change.** "Initial thermal RFA: after the patient has had at least 2 medically reasonable and necessary diagnostic MBBs, with each one providing a consistent minimum of 80% sustained relief of primary (index) pain (with the duration of relief being consistent with the agent used)." The rule counted blocks only (P2 blocker). New rule: `blocks_with_80pct_relief >= 2 and relief_duration_consistent_with_agent`. The new variable is bound only when the record states it; PAIR keeps no drug-duration table. Tests: `test_facet_block_relief_sustained_and_two_weeks_apart`.
 
 **5c. Same pain scale and baseline disability scale: known limit, plus one open question.** "*Pain assessment must be performed and documented at baseline, after each diagnostic procedure and at each follow-up using the same pain scale for each assessment. A disability scale must also be obtained at baseline to be used for functional assessment (if patient qualifies for treatment)."
 - **Same scale:** listed as a known limit in the README. It is a cross-document check, and notes rarely name the scale.
-- **Baseline disability scale: uncertain.** The Q5 critic proposed adding `disability_scale_at_baseline` to `pain_and_function`. The Q3 critic read "(if patient qualifies for treatment)" as making it a documentation duty after qualifying, not an entry criterion. The rule isn't changed, and the item is listed as a known limit until Nithin rules.
+- **Baseline disability scale: change (decision 2).** The Q5 critic proposed adding `disability_scale_at_baseline` to `pain_and_function`. The Q3 critic read "(if patient qualifies for treatment)" as a documentation duty after qualifying. Every PAIR facet request is for treatment, so the "must" applies, and the rule now requires it.
 
-## Open questions for Nithin (Step 9)
+## Decisions on the open questions (2026-10-23)
 
-1. **AHI between 14 and 15** (for example 14.5) fits neither LCD band, so it comes out unmet. Keep, or round?
-2. **Baseline disability scale (5c):** add it as a requirement of `pain_and_function`, or keep it as a known limit?
-3. **Late PAP re-evaluation:** model "coverage commences with the date of that re-evaluation" (for example, report insufficient instead of unmet when a later visit shows benefit), or keep it as a known limit?
-4. **Two LCD items outside the five questions:** the 2-week minimum between diagnostic blocks and the synovial-cyst exception. Both are listed as known limits.
-5. **VAS on 0 to 100 mm:** the rule assumes 0 to 10. Extraction must normalize a 35 mm VAS to 3.5, or it would pass at 35.
-6. **Proposed L33797 revision:** the MCD export lists a proposed "Oxygen and Oxygen Equipment" LCD (status P, export `lcd_id` 40403, display id 33797, v11, updated 2026-07-16). If it becomes final, re-run this question.
+Nithin delegated these ("take the decisions that make the project authentic"). Each takes the reading closest to the policy text. Details are in ADR-0015, and sign-off stays with Nithin (Step 9).
+
+1. **AHI between 14 and 15:** the lower band is read as 5 up to 15, so 14.5 needs symptoms instead of failing outright. AHI is an average, and the definition's 30-event and 10-event minimums put the cut points at 15 and 5. Tested at 14.5.
+2. **Baseline disability scale:** required (`disability_scale_at_baseline`). "A disability scale must also be obtained at baseline to be used for functional assessment (if patient qualifies for treatment)." Every PAIR facet request is for treatment.
+3. **Late PAP re-evaluation:** met, with coverage from that date: "If the treating practitioner re-evaluation does not occur until after the 91st day but the evaluation demonstrates that the beneficiary is benefiting from PAP therapy as defined in criteria 1 and 2 above, continued coverage of the PAP device will commence with the date of that re-evaluation." A visit before day 31 is the window's failure. Tested at gaps 29 to 92 and 140.
+4. **2-week block spacing and the synovial-cyst exception:** both modeled. "The second diagnostic procedure may only be performed a minimum of 2 weeks after the initial diagnostic procedure." Radiculopathy "caused by facet joint synovial cyst" is excepted, so untreated radiculopathy with no stated cause is insufficient. Tested at 13 and 14 days, and with the cause true, false and unknown.
+5. **VAS on 0 to 100 mm:** extraction puts pain scores on 0 to 10 (`35 mm` → 3.5). A score above 10 with no stated scale binds no value instead of passing.
+6. **Proposed L33797 revision:** still a watch item. The MCD export lists a proposed "Oxygen and Oxygen Equipment" LCD (status P, export `lcd_id` 40403, display id 33797, v11, updated 2026-07-16). If it becomes final, re-run this question.
 
 ## Raw verdicts
 
