@@ -25,7 +25,10 @@ The clean twins are unmodified copies of real test cases, so a blocker on one is
 | seed-02 | home-oxygen-10 | The planted blood-gas `conflicting` state pairs "93% on room air" taken "while short of breath" with "SpO2 87%" taken "at rest on room air". These are different conditions, so the at-rest value stands and the conflict is weak | Text confirmed in the case | **Real defect** (the planner's conflict isn't a true conflict) |
 | seed-18 | home-oxygen-03 | Group I with SpO2 89% and no PaO2: the critic says unmet, but ADR-0012's three-valued logic says insufficient (the PaO2 route is untested) | Rule-meaning disagreement | **Critic disagrees with the documented semantics.** Counted as a false alarm. Goes to the Step 7 rule review |
 
-**Adjudicated false-blocker rate: 1/10 (10%), which meets the ≤10% target.** Nithin signs off on this adjudication.
+**Adjudicated false-blocker rate: 1/10 (10%), which meets the ≤10% target.**
+- **Signed off** by Nithin on 2026-10-22.
+- **Same day:** Group I semantics kept as insufficient (ADR-0012), and a line added to the rubric's Stance section.
+- **Rubric change:** that line clarifies the existing semantics and adds no new check, so the gate isn't re-run. A fresh-seed re-test is still due before the next rubric change that alters checks.
 
 ## What the test already found in the real cases
 These go into the full audit (Step 8) and the rule review (Step 7).
