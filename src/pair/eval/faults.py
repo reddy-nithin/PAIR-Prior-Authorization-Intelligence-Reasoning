@@ -11,7 +11,7 @@ import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
-from pair.contracts import Checklist, CriterionStatus, Evidence
+from pair.contracts import Checklist, CriterionStatus, Evidence, ReasonCategory
 from pair.eval.cases import CaseBundle, CaseType, Note
 from pair.eval.synth.denials import REASONS
 from pair.eval.synth.planners import UNITS
@@ -36,7 +36,9 @@ class Fault:
     description: str
 
 
-FaultFn = Callable[[CaseBundle, Checklist, random.Random], tuple[CaseBundle, Fault] | None]
+FaultFn = Callable[
+    [CaseBundle, Checklist, random.Random], tuple[CaseBundle, Fault] | None
+]
 
 PARAPHRASES: dict[tuple[str, str], str] = {
     ("pap-osa", "f2f_visit"): "He was examined in person in sleep clinic two weeks before the home study.",
@@ -63,7 +65,10 @@ _LEADING_NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 def _replace_note(case: CaseBundle, doc_id: str, text: str) -> list[Note]:
     """The case's notes with one note's text replaced."""
-    return [Note(doc_id=n.doc_id, title=n.title, text=text) if n.doc_id == doc_id else n for n in case.notes]
+    return [
+        Note(doc_id=n.doc_id, title=n.title, text=text) if n.doc_id == doc_id else n
+        for n in case.notes
+    ]
 
 
 def _append(case: CaseBundle, doc_id: str, sentence: str) -> list[Note]:
@@ -80,16 +85,26 @@ def _numeric(case: CaseBundle) -> list[Evidence]:
     ]  # fmt: skip
 
 
-def label_flip(case: CaseBundle, checklist: Checklist, rng: random.Random) -> tuple[CaseBundle, Fault] | None:
+def label_flip(
+    case: CaseBundle, checklist: Checklist, rng: random.Random
+) -> tuple[CaseBundle, Fault] | None:
     """Flip one gold criterion status (a mechanical fault the precheck must catch)."""
     cid = rng.choice(sorted(case.gold_statuses))
     old = case.gold_statuses[cid]
-    new = CriterionStatus.UNMET if old is not CriterionStatus.UNMET else CriterionStatus.MET
+    new = (
+        CriterionStatus.UNMET
+        if old is not CriterionStatus.UNMET
+        else CriterionStatus.MET
+    )
     bad = case.model_copy(update={"gold_statuses": {**case.gold_statuses, cid: new}})
-    return bad, Fault("label_flip", ("L1",), "blocker", cid, f"gold {cid} changed from {old} to {new}")
+    return bad, Fault(
+        "label_flip", ("L1",), "blocker", cid, f"gold {cid} changed from {old} to {new}"
+    )
 
 
-def span_value_mismatch(case: CaseBundle, checklist: Checklist, rng: random.Random) -> tuple[CaseBundle, Fault] | None:
+def span_value_mismatch(
+    case: CaseBundle, checklist: Checklist, rng: random.Random
+) -> tuple[CaseBundle, Fault] | None:
     """Change the number inside a planted span, keeping the gold value (span no longer states it)."""
     candidates = [e for e in _numeric(case) if _LEADING_NUMBER.search(e.span_text)]
     if not candidates:
@@ -104,26 +119,49 @@ def span_value_mismatch(case: CaseBundle, checklist: Checklist, rng: random.Rand
     note = next(n for n in case.notes if n.doc_id == item.doc_id)
     text = note.text[: item.char_start] + new_span + note.text[item.char_end :]
     evidence = [
-        e.model_copy(update={"span_text": new_span}) if (e.doc_id, e.char_start) == (item.doc_id, item.char_start) else e
+        e.model_copy(update={"span_text": new_span})
+        if (e.doc_id, e.char_start) == (item.doc_id, item.char_start)
+        else e
         for e in case.gold_evidence
     ]
-    bad = case.model_copy(update={"notes": _replace_note(case, item.doc_id, text), "gold_evidence": evidence})
-    description = f"{item.variable}: note now says {new_span!r}, gold value still {item.value}"
-    return bad, Fault("span_value_mismatch", ("L3", "L1"), "blocker", item.criterion_id, description)
+    bad = case.model_copy(
+        update={
+            "notes": _replace_note(case, item.doc_id, text),
+            "gold_evidence": evidence,
+        }
+    )
+    description = (
+        f"{item.variable}: note now says {new_span!r}, gold value still {item.value}"
+    )
+    return bad, Fault(
+        "span_value_mismatch", ("L3", "L1"), "blocker", item.criterion_id, description
+    )
 
 
-def paraphrase_leak(case: CaseBundle, checklist: Checklist, rng: random.Random) -> tuple[CaseBundle, Fault] | None:
+def paraphrase_leak(
+    case: CaseBundle, checklist: Checklist, rng: random.Random
+) -> tuple[CaseBundle, Fault] | None:
     """Supply a missing unit's value in words its leak regex doesn't catch."""
-    absent = [u.name for u in UNITS[case.policy_id] if case.states.get(u.name) == "absent"]
+    absent = [
+        u.name for u in UNITS[case.policy_id] if case.states.get(u.name) == "absent"
+    ]
     if not absent:
         return None
     unit = rng.choice(sorted(absent))
     sentence = PARAPHRASES[(case.policy_id, unit)]
     bad = case.model_copy(update={"notes": _append(case, "clinic", sentence)})
-    return bad, Fault("paraphrase_leak", ("K1", "L1"), "blocker", unit, f"clinic note now says: {sentence}")
+    return bad, Fault(
+        "paraphrase_leak",
+        ("K1", "L1"),
+        "blocker",
+        unit,
+        f"clinic note now says: {sentence}",
+    )
 
 
-def contradiction(case: CaseBundle, checklist: Checklist, rng: random.Random) -> tuple[CaseBundle, Fault] | None:
+def contradiction(
+    case: CaseBundle, checklist: Checklist, rng: random.Random
+) -> tuple[CaseBundle, Fault] | None:
     """Add a second, different value for a planted number in the other note."""
     candidates = _numeric(case)
     if not candidates:
@@ -138,43 +176,78 @@ def contradiction(case: CaseBundle, checklist: Checklist, rng: random.Random) ->
     sentence = f"An outside summary from the referring office lists: {restated}."
     bad = case.model_copy(update={"notes": _append(case, other, sentence)})
     description = f"{other} now has {alt} for {item.variable} (gold {item.value})"
-    return bad, Fault("contradiction", ("K2", "L1", "R1"), "major", item.criterion_id, description)
+    return bad, Fault(
+        "contradiction", ("K2", "L1", "R1"), "major", item.criterion_id, description
+    )
 
 
-def denial_reason_swap(case: CaseBundle, checklist: Checklist, rng: random.Random) -> tuple[CaseBundle, Fault] | None:
+def denial_reason_swap(
+    case: CaseBundle, checklist: Checklist, rng: random.Random
+) -> tuple[CaseBundle, Fault] | None:
     """For a type B to D case, make the letter's reason name a criterion the record meets."""
     if case.case_type is CaseType.WRONGLY_DENIED:
         return None
-    met = [c for c, s in sorted(case.gold_statuses.items()) if s is CriterionStatus.MET and c in REASONS]
-    met = [c for c in met if REASONS[c][1] != case.gold_denial.reason_text]
+    met = [
+        c
+        for c, s in sorted(case.gold_statuses.items())
+        if s is CriterionStatus.MET and c in REASONS
+    ]
+    category = case.gold_denial.reason_category
+    wording = 0 if category is ReasonCategory.INSUFFICIENT_DOCUMENTATION else 1
+    met = [c for c in met if REASONS[c][wording] != case.gold_denial.reason_text]
     if not met:
         return None
     cid = rng.choice(met)
-    category, reason = REASONS[cid]
+    reason = REASONS[cid][wording]
     text = case.denial_text.replace(case.gold_denial.reason_text, reason)
-    denial = case.gold_denial.model_copy(update={"reason_text": reason, "reason_category": category})
+    denial = case.gold_denial.model_copy(
+        update={"reason_text": reason, "reason_category": category}
+    )
     bad = case.model_copy(update={"denial_text": text, "gold_denial": denial})
-    return bad, Fault("denial_reason_swap", ("D2",), "major", cid, f"type {case.case_type.value} letter now denies on met {cid}")
+    return bad, Fault(
+        "denial_reason_swap",
+        ("D2",),
+        "major",
+        cid,
+        f"type {case.case_type.value} letter now denies on met {cid}",
+    )
 
 
-def age_mismatch(case: CaseBundle, checklist: Checklist, rng: random.Random) -> tuple[CaseBundle, Fault] | None:
+def age_mismatch(
+    case: CaseBundle, checklist: Checklist, rng: random.Random
+) -> tuple[CaseBundle, Fault] | None:
     """Change the patient's age in the clinic note so it disagrees with the profile."""
     note = next(n for n in case.notes if n.doc_id == "clinic")
     new_age = str(case.profile.age + rng.choice((-11, -9, 9, 11)))
     match = _AGE.search(note.text)
     in_span = match is not None and any(
-        e.doc_id == "clinic" and e.char_start <= match.start(1) < e.char_end for e in case.gold_evidence
+        e.doc_id == "clinic" and e.char_start <= match.start(1) < e.char_end
+        for e in case.gold_evidence
     )
     if match and not in_span and len(new_age) == len(match.group(1)):
-        notes = _replace_note(case, "clinic", note.text[: match.start(1)] + new_age + note.text[match.end(1) :])
+        notes = _replace_note(
+            case,
+            "clinic",
+            note.text[: match.start(1)] + new_age + note.text[match.end(1) :],
+        )
     else:
         person = "woman" if case.profile.sex == "F" else "man"
-        notes = _append(case, "clinic", f"Addendum: patient is a {new_age}-year-old {person}.")
+        notes = _append(
+            case, "clinic", f"Addendum: patient is a {new_age}-year-old {person}."
+        )
     bad = case.model_copy(update={"notes": notes})
-    return bad, Fault("age_mismatch", ("R1",), "major", "profile", f"clinic age now {new_age}, profile {case.profile.age}")
+    return bad, Fault(
+        "age_mismatch",
+        ("R1",),
+        "major",
+        "profile",
+        f"clinic age now {new_age}, profile {case.profile.age}",
+    )
 
 
-def impossible_vital(case: CaseBundle, checklist: Checklist, rng: random.Random) -> tuple[CaseBundle, Fault] | None:
+def impossible_vital(
+    case: CaseBundle, checklist: Checklist, rng: random.Random
+) -> tuple[CaseBundle, Fault] | None:
     """Add a physiologically impossible vital sign to the clinic note."""
     sentence = (
         "Vitals today: BP 134/82, HR 74, temperature 44.9 C."
@@ -185,12 +258,16 @@ def impossible_vital(case: CaseBundle, checklist: Checklist, rng: random.Random)
     return bad, Fault("impossible_vital", ("R2",), "major", "vitals", sentence)
 
 
-def template_echo(case: CaseBundle, checklist: Checklist, rng: random.Random) -> tuple[CaseBundle, Fault] | None:
+def template_echo(
+    case: CaseBundle, checklist: Checklist, rng: random.Random
+) -> tuple[CaseBundle, Fault] | None:
     """Leak case-spec wording into a note, as a broken generator would."""
     unit = rng.choice(sorted(case.states))
     sentence = f"[plan: {unit} = {case.states[unit]}]"
     bad = case.model_copy(update={"notes": _append(case, "report", sentence)})
-    return bad, Fault("template_echo", ("R3",), "minor", unit, f"report now ends with {sentence}")
+    return bad, Fault(
+        "template_echo", ("R3",), "minor", unit, f"report now ends with {sentence}"
+    )
 
 
 FAULTS: Mapping[str, FaultFn] = {
@@ -269,5 +346,7 @@ def seed_suite(
     seeded: list[SeededCase] = []
     for i, (base, case, fault) in enumerate(made, start=1):
         seed_id = f"seed-{i:0{width}d}"
-        seeded.append(SeededCase(seed_id, base.id, case.model_copy(update={"id": seed_id}), fault))
+        seeded.append(
+            SeededCase(seed_id, base.id, case.model_copy(update={"id": seed_id}), fault)
+        )
     return seeded

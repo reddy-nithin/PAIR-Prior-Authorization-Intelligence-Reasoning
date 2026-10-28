@@ -46,3 +46,16 @@ def test_unknown_policy_raises() -> None:
     """Asking for examples of an unmodeled policy is an error."""
     with pytest.raises(KeyError):
         examples_for("knee-brace")
+
+
+def test_oxygen_examples_teach_who_ran_the_test_both_ways() -> None:
+    """Every oxygen example names the tester in its own span, and one shows a supplier (not qualified)."""
+    examples = examples_for("home-oxygen")
+    values = []
+    for example in examples:
+        testers = [e for e in example.extractions if e.extraction_class == "tested_by_qualified_provider"]
+        assert testers, example.text[:60]
+        dates = [e.extraction_text for e in example.extractions if e.extraction_class == "test_date"]
+        assert not any(t.extraction_text in d or d in t.extraction_text for t in testers for d in dates)
+        values.extend(t.attributes["value"] for t in testers if t.attributes)
+    assert {"true", "false"} <= set(values)

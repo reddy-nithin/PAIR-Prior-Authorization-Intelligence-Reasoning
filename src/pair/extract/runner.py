@@ -210,6 +210,13 @@ def _scaled(variable: str, value: EvidenceValue, span: str) -> EvidenceValue:
     return pain_on_ten_point_scale(value, span) if variable in PAIN_SCORE_VARIABLES else value
 
 
+def _grounded(var_type: VariableType, value: EvidenceValue, span: str) -> EvidenceValue:
+    """A date must be readable from its own span; an undated mention ('Home sleep test') has none."""
+    if var_type is VariableType.DATE and normalize(VariableType.DATE, span) is None:
+        return None
+    return value
+
+
 def _evidence(
     extraction: Any,
     text: str,
@@ -227,7 +234,7 @@ def _evidence(
         Evidence(
             criterion_id=criterion_id,
             variable=extraction.extraction_class,
-            value=_scaled(extraction.extraction_class, normalize(var_type, raw), span),
+            value=_grounded(var_type, _scaled(extraction.extraction_class, normalize(var_type, raw), span), span),
             span_text=span,
             char_start=start,
             char_end=end,

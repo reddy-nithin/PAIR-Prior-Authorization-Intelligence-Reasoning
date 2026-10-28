@@ -5,20 +5,38 @@ All numbers come from logged runs.
 <!-- phase2-core:start -->
 ## Phase 2: core engine (steps 1 to 4)
 
-Run: backend `ollama`, model `gemma4:e4b`, host `http://localhost:11435`, config_hash `7fb3eaf148e6`, date `2026-10-19`, log `data/runs/eval-core-20261019-163452-7fb3eaf148e6.jsonl`. Cases: 30 synthetic (0 with errors).
+Run: backend `ollama`, model `gemma4:e4b`, host `http://localhost:11435`, config_hash `7fb3eaf148e6`, date `2026-10-28`, log `data/runs/eval-core-20261028-121258-7fb3eaf148e6.jsonl`. Cases: 30 synthetic (0 with errors).
 
 | Metric | Target | Result | Pass |
 |---|---|---|---|
-| Denial-field accuracy | ≥90% | 95.7% | ✅ |
-| Checklist macro-F1 | ≥0.85 | 0.93 | ✅ |
-| Grounding (valid char interval) | ≥95% | 98.0% | ✅ |
+| Denial-field accuracy | ≥90% | 100.0% | ✅ |
+| Checklist macro-F1 | ≥0.85 | 0.90 | ✅ |
+| Grounding (valid char interval) | ≥95% | 99.5% | ✅ |
 
-- Per field: service 100.0%, codes 100.0%, reason_category 70.0%, policy_ref 100.0%, plan_type 100.0%, date 100.0%, selected_policy 100.0%.
-- F1 per status: met 0.97, unmet 0.92, insufficient 0.91. Macro-F1 by case type: A 0.92, B 0.92, C 0.89, D 1.00.
-- Overall verdict accuracy 90.0%; gold-span recall 98.3%.
-- Extractions: 302 non-empty, 6 ungrounded (dropped), 28 blank placeholders (excluded); 0 documents failed to parse. Mean time per case 5.94 s.
+- Per field: service 100.0%, codes 100.0%, reason_category 100.0%, policy_ref 100.0%, plan_type 100.0%, date 100.0%, selected_policy 100.0%.
+- F1 per status: met 0.96, unmet 0.88, insufficient 0.86. Macro-F1 by case type: A 0.81, B 0.60, C 0.92, D 0.88.
+- Overall verdict accuracy 83.3%; gold-span recall 93.0%.
+- Extractions: 392 non-empty, 2 ungrounded (dropped), 1 blank placeholders (excluded); 0 documents failed to parse. Mean time per case 6.58 s.
 - Definitions: denial accuracy pools 6 `Denial` fields + selected policy over all cases; macro-F1 is over met/unmet/insufficient for every criterion, scored on the case's own checklist; grounding excludes blank placeholders the model emits for facts it didn't find.
 <!-- phase2-core:end -->
+
+<!-- phase2-dev:start -->
+## Phase 2: held-out dev set (ADR-0017)
+
+Run: backend `ollama`, model `gemma4:e4b`, host `http://localhost:11435`, config_hash `7fb3eaf148e6`, date `2026-10-28`, log `data/runs/eval-core-20261028-121617-7fb3eaf148e6.jsonl`. Cases: `data/cases-dev-v4`, 30 synthetic on 10 patients the test set never uses (seed 2027); 0 with errors.
+
+| Metric | Target | Result | Pass |
+|---|---|---|---|
+| Denial-field accuracy | ≥90% | 100.0% | ✅ |
+| Checklist macro-F1 | ≥0.85 | 0.94 | ✅ |
+| Grounding (valid char interval) | ≥95% | 99.2% | ✅ |
+
+- Per field: service 100.0%, codes 100.0%, reason_category 100.0%, policy_ref 100.0%, plan_type 100.0%, date 100.0%, selected_policy 100.0%.
+- F1 per status: met 0.98, unmet 0.93, insufficient 0.92. Macro-F1 by case type: A 0.92, B 0.63, C 1.00, D 0.97.
+- Overall verdict accuracy 90.0%; gold-span recall 94.1%.
+- Extractions: 371 non-empty, 3 ungrounded (dropped), 25 blank placeholders (excluded); 0 documents failed to parse. Mean time per case 6.59 s.
+- Definitions: denial accuracy pools 6 `Denial` fields + selected policy over all cases; macro-F1 is over met/unmet/insufficient for every criterion, scored on the case's own checklist; grounding excludes blank placeholders the model emits for facts it didn't find.
+<!-- phase2-dev:end -->
 
 ### Phase 2 run history
 - Run 1 (`data/runs/eval-core-20261019-153848-7fb3eaf148e6.jsonl`, same 30 cases, before fixes): denial accuracy 95.7%, macro-F1 0.81, grounding 98.9%. LangExtract silently dropped unparseable chunks, the extractor turned "moderate pain" into 4, and one case (facet-joint-04) had a wrong gold label because the note writer leaked an "absent" fact.

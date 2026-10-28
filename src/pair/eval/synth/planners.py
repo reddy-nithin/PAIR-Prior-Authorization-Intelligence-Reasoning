@@ -12,7 +12,7 @@ import datetime as dt
 import logging
 import random
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from pair.contracts import (
@@ -27,7 +27,11 @@ from pair.rules.engine import run_rules
 
 logger = logging.getLogger(__name__)
 
-MET, UNMET, INSUFFICIENT = CriterionStatus.MET, CriterionStatus.UNMET, CriterionStatus.INSUFFICIENT
+MET, UNMET, INSUFFICIENT = (
+    CriterionStatus.MET,
+    CriterionStatus.UNMET,
+    CriterionStatus.INSUFFICIENT,
+)
 CLINIC, REPORT = "clinic", "report"
 """The two documents every case has: a clinic note and a test/device report."""
 
@@ -84,6 +88,8 @@ class Unit:
     """What the note writer must not mention when the unit is absent."""
     forbidden: str = ""
     """Regex that must not match the notes when the unit is absent (catches leaked values)."""
+    hidden: dict[str, tuple[str, str]] = field(default_factory=dict)
+    """Other states that keep a fact out of the notes: state → (topic to leave out, leak regex)."""
 
 
 @dataclass(frozen=True)
@@ -101,6 +107,8 @@ class CaseSpec:
     forbidden: tuple[str, ...]
     focus_criterion: str
     """The criterion the denial letter's reason is about."""
+    focus_state: str
+    """The planted state of the focus criterion's unit, which sets the letter's reason category."""
 
 
 def _d(day: dt.date) -> str:
@@ -108,7 +116,14 @@ def _d(day: dt.date) -> str:
     return day.strftime("%m/%d/%Y")
 
 
-def _p(criteria: str | tuple[str, ...], variable: str, phrase: str, value: Any, doc: str, status: str = "asserted") -> Plant:
+def _p(
+    criteria: str | tuple[str, ...],
+    variable: str,
+    phrase: str,
+    value: Any,
+    doc: str,
+    status: str = "asserted",
+) -> Plant:
     """Shorthand for a Plant."""
     ids = (criteria,) if isinstance(criteria, str) else criteria
     return Plant(ids, variable, phrase, value, doc, EvidenceStatus(status))
@@ -138,6 +153,16 @@ def _pap_dates(rng: random.Random) -> dict[str, dt.date]:
 
 
 F2F = "f2f_visit"
+_AHI_NUMBERS = (
+    r"\b(?:AHI|RDI|apnea-hypopnea)\b|\bevents? (?:per|an|a|each|/) ?h(?:ou)?r\b"
+    r"|\b\d+\s+(?:total\s+)?(?:respiratory\s+)?events\b"
+)
+"""A sleep test number: the AHI or RDI by name, an event rate, or an event count."""
+_PAP_QUALIFYING = (
+    r"hypertens|ischemic heart|coronary|myocardial|\bstroke\b|cerebrovascular|insomnia|depress|\bmood\b"
+    r"|cognit|dementia"
+)
+"""L33718's symptoms and conditions that qualify an AHI of 5 to 14, by name."""
 AHI = "ahi_threshold"
 ADH = "adherence"
 REEVAL = "reevaluation"
@@ -170,7 +195,8 @@ PAP_UNITS: tuple[Unit, ...] = (
                    d["test"] + dt.timedelta(days=12), CLINIC),
             ),
         },
-        "an in-person visit date before the sleep test",
+        "any visit, consultation or evaluation before the sleep test, dated or not",
+        r"\bpresents? (?:for|with)\b|\binitial (?:visit|consult\w*|evaluation)\b|\bconsultation\b",
     ),
     Unit(
         AHI,
@@ -179,28 +205,28 @@ PAP_UNITS: tuple[Unit, ...] = (
             "present": lambda d: _out(
                 {AHI: MET},
                 _p(AHI, "sleep_or_recording_hours", "total recording time 6.2 hours", 6.2, REPORT),
-                _p(AHI, "ahi", "AHI 22.4 events/hour", 22.4, REPORT),
+                _p(AHI, "ahi", "AHI 21.1 events/hour", 21.1, REPORT),
                 _p(AHI, "event_count", "131 total respiratory events", 131, REPORT),
                 _p(AHI, "symptoms_or_conditions", "daytime sleepiness", ["daytime sleepiness"], CLINIC),
             ),
             "failing": lambda d: _out(
                 {AHI: UNMET},
                 _p(AHI, "sleep_or_recording_hours", "total recording time 6.8 hours", 6.8, REPORT),
-                _p(AHI, "ahi", "AHI 3.1 events/hour", 3.1, REPORT),
+                _p(AHI, "ahi", "AHI 2.6 events/hour", 2.6, REPORT),
                 _p(AHI, "event_count", "18 total respiratory events", 18, REPORT),
             ),
             "absent": lambda d: _out({AHI: INSUFFICIENT}),
             "negated": lambda d: _out(
                 {AHI: INSUFFICIENT},
                 _p(AHI, "sleep_or_recording_hours", "total recording time 5.9 hours", 5.9, REPORT),
-                _p(AHI, "ahi", "AHI 9.6 events/hour", 9.6, REPORT),
+                _p(AHI, "ahi", "AHI 8.8 events/hour", 8.8, REPORT),
                 _p(AHI, "event_count", "52 total respiratory events", 52, REPORT),
-                _p(AHI, "symptoms_or_conditions", "denies daytime sleepiness", ["daytime sleepiness"], CLINIC, "negated"),
+                _p(AHI, "symptoms_or_conditions", "denied daytime sleepiness at the sleep medicine visit", ["daytime sleepiness"], CLINIC, "negated"),
             ),
             "conflicting": lambda d: _out(
                 {AHI: INSUFFICIENT},
                 _p(AHI, "sleep_or_recording_hours", "total recording time 6.4 hours", 6.4, REPORT),
-                _p(AHI, "ahi", "AHI 18.2 events/hour", 18.2, REPORT),
+                _p(AHI, "ahi", "AHI 16.6 events/hour", 16.6, REPORT),
                 _p(AHI, "event_count", "106 total respiratory events", 106, REPORT),
                 _p(AHI, "ahi", "AHI of 11.0", 11.0, CLINIC),
             ),
@@ -209,8 +235,17 @@ PAP_UNITS: tuple[Unit, ...] = (
                 _p(AHI, "ahi", "moderate obstructive sleep apnea", None, REPORT),
             ),
         },
-        "any sleep test result numbers (AHI, RDI or event counts) or sleep apnea symptoms",
-        r"\b(AHI|RDI|apnea-hypopnea)\b",
+        "any sleep test result numbers (AHI, RDI or event counts), a severity grade (mild, moderate, severe) "
+        "or sleep apnea symptoms",
+        rf"{_AHI_NUMBERS}|\b(?:mild|moderate|severe)\b[^.]{{0,20}}\b(?:sleep apnea|OSA)\b",
+        {
+            "vague": ("the AHI or RDI and any event count or event rate", _AHI_NUMBERS),
+            "negated": (
+                ("any other sleep apnea symptom, or hypertension, heart disease, stroke, insomnia, mood disorders "
+                "or cognitive problems"),
+                rf"{_PAP_QUALIFYING}|\bsymptoms? of (?:obstructive )?sleep apnea\b|\bsymptomatic\b|somnolen|fatigue",
+            ),
+        },
     ),
     Unit(
         ADH,
@@ -223,8 +258,9 @@ PAP_UNITS: tuple[Unit, ...] = (
             ),
             "failing": lambda d: _out(
                 {ADH: UNMET},
-                _p(ADH, "pct_nights_4h_best_30d", "used 4 hours or more on 52% of nights", 52, REPORT),
-                _p(ADH, "window_in_first_90_days", "30 consecutive days within the first 3 months", True, REPORT),
+                _p(ADH, "pct_nights_4h_best_30d", "best 30 consecutive days: 4 hours or more on 52% of nights", 52,
+                   REPORT),
+                _p(ADH, "window_in_first_90_days", "download covers days 1 to 90 of CPAP use", True, REPORT),
             ),
             "absent": lambda d: _out({ADH: INSUFFICIENT}),
             "out_of_window": lambda d: _out(
@@ -245,13 +281,13 @@ PAP_UNITS: tuple[Unit, ...] = (
                 {REEVAL: MET},
                 _p(REEVAL, "therapy_start_date", f"CPAP started {_d(d['start'])}", d["start"], CLINIC),
                 _p(REEVAL, "reevaluation_date", f"Follow-up visit {_d(d['reeval'])}", d["reeval"], CLINIC),
-                _p(REEVAL, "symptoms_improved", "sleepiness much improved on CPAP", True, CLINIC),
+                _p(REEVAL, "symptoms_improved", "snoring and witnessed apneas much improved on CPAP", True, CLINIC),
             ),
             "failing": lambda d: _out(
                 {REEVAL: UNMET},
                 _p(REEVAL, "therapy_start_date", f"CPAP started {_d(d['start'])}", d["start"], CLINIC),
                 _p(REEVAL, "reevaluation_date", f"Follow-up visit {_d(d['reeval'])}", d["reeval"], CLINIC),
-                _p(REEVAL, "symptoms_improved", "no improvement in sleepiness on CPAP", False, CLINIC),
+                _p(REEVAL, "symptoms_improved", "no improvement in snoring or witnessed apneas on CPAP", False, CLINIC),
             ),
             "absent": lambda d: _out(
                 {REEVAL: INSUFFICIENT},
@@ -261,7 +297,7 @@ PAP_UNITS: tuple[Unit, ...] = (
                 {REEVAL: UNMET},
                 _p(REEVAL, "therapy_start_date", f"CPAP started {_d(d['start'])}", d["start"], CLINIC),
                 _p(REEVAL, "reevaluation_date", f"Follow-up visit {_d(d['early_reeval'])}", d["early_reeval"], CLINIC),
-                _p(REEVAL, "symptoms_improved", "sleepiness much improved on CPAP", True, CLINIC),
+                _p(REEVAL, "symptoms_improved", "snoring and witnessed apneas much improved on CPAP", True, CLINIC),
             ),
         },
         "a follow-up visit after starting CPAP or whether symptoms improved",
@@ -298,14 +334,15 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
                 {ORD: MET},
                 _p(ORD, "practitioner_ordered_and_reviewed", "I ordered resting oximetry and reviewed the results", True, CLINIC),
                 _p(ORD, "rx_from_inpatient_stay", "seen as an outpatient, no recent hospital stay", False, CLINIC),
-                _p(ORD, "symptoms_noted_at_test", "tested during this visit while short of breath", True, CLINIC),
+                _p(ORD, "symptoms_noted_at_test", "short of breath at the time of testing", True, CLINIC),
             ),
             "failing": lambda d: _out(
                 {ORD: UNMET},
-                _p(ORD, "practitioner_ordered_and_reviewed", "I ordered an arterial blood gas and reviewed the results", True, CLINIC),
+                _p(ORD, "practitioner_ordered_and_reviewed", "I ordered the inpatient oxygen test and reviewed the results",
+                   True, CLINIC),
                 _p(ORD, "rx_from_inpatient_stay", "home oxygen was first ordered at hospital discharge", True, CLINIC),
-                _p(ORD, "test_date", f"inpatient arterial blood gas {_d(d['early_inpatient_test'])}",
-                   d["early_inpatient_test"], CLINIC),
+                _p(ORD, "test_date", f"inpatient test date {_d(d['early_inpatient_test'])}", d["early_inpatient_test"],
+                   REPORT),
                 _p(ORD, "discharge_date", f"discharged home {_d(d['discharge'])}", d["discharge"], CLINIC),
             ),
             "absent": lambda d: _out({ORD: INSUFFICIENT}),
@@ -318,7 +355,7 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
         {
             "present": lambda d: _out(
                 {QT: MET},
-                _p(QT, "tested_by_qualified_provider", "Hospital outpatient lab performed the test", True, REPORT),
+                _p(QT, "tested_by_qualified_provider", "Hospital laboratory performed the test", True, REPORT),
             ),
             "failing": lambda d: _out(
                 {QT: UNMET},
@@ -326,8 +363,8 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
             ),
             "absent": lambda d: _out({QT: INSUFFICIENT}),
         },
-        "who performed the oxygen test",
-        r"performed by|laborator|\blab\b|technician|supplier",
+        "who performed the oxygen test or where it was done",
+        r"performed by|laborator|\blab\b|technician|supplier|during this visit|in (?:the|our) (?:office|clinic)|in-office",
     ),
     Unit(
         "blood_gas",
@@ -429,6 +466,12 @@ FACET_UNITS: tuple[Unit, ...] = (
         },
         "a pain score or rating (mild, moderate, severe) or how the pain limits function",
         r"\b\d+\s*/\s*10\b(?!/)|ODI|\b(?:mild|moderate|severe)(?:ly)?\b[^.]{0,30}\bpain\b",
+        {
+            "failing": (
+                "any other pain score, such as a baseline or worst score",
+                r"\b(?!2\s*/\s*10\b)\d+\s*/\s*10\b(?!/)|\b(?:moderate|severe)(?:ly)?\b[^.]{0,30}\bpain\b",
+            ),
+        },
     ),
     Unit(
         DUR,
@@ -466,7 +509,7 @@ FACET_UNITS: tuple[Unit, ...] = (
             "absent": lambda d: _out({RAD: INSUFFICIENT}),
         },
         "radiating leg pain, radiculopathy, neurogenic claudication or nerve symptoms",
-        r"radicul|radiat|sciatica|claudicat|weakness|tingling|\bneuro(?:logic(?:al)?(?:ly)?)?\b[^.]{0,30}\bintact\b",
+        r"radicul|radiat|sciatica|claudicat|weakness|tingling|\bneuro(?:logic(?:al)?(?:ly)?)?\b[^.]{0,80}\bintact\b",
     ),
     Unit(
         PATH,
@@ -503,7 +546,7 @@ FACET_UNITS: tuple[Unit, ...] = (
             "conflicting": lambda d: _out(
                 {BLK: INSUFFICIENT},
                 _p(BLK, "blocks_with_80pct_relief", "Two medial branch blocks each gave 85% relief", 2, REPORT),
-                _p(BLK, "blocks_with_80pct_relief", "one diagnostic block helped", 1, CLINIC),
+                _p(BLK, "blocks_with_80pct_relief", "only one of the two blocks gave 80% or more relief", 1, CLINIC),
             ),
         },
         "results of diagnostic medial branch blocks",
@@ -511,7 +554,11 @@ FACET_UNITS: tuple[Unit, ...] = (
     ),
 )  # fmt: skip
 
-UNITS: dict[str, tuple[Unit, ...]] = {"pap-osa": PAP_UNITS, "home-oxygen": OXYGEN_UNITS, "facet-joint": FACET_UNITS}
+UNITS: dict[str, tuple[Unit, ...]] = {
+    "pap-osa": PAP_UNITS,
+    "home-oxygen": OXYGEN_UNITS,
+    "facet-joint": FACET_UNITS,
+}
 DATES: dict[str, Callable[[random.Random], dict[str, dt.date]]] = {
     "pap-osa": _pap_dates,
     "home-oxygen": _oxygen_dates,
@@ -525,14 +572,21 @@ CONTEXT: dict[str, dict[str, bool | None]] = {
 """PAP cases are continued-coverage reviews (all 4 criteria apply); facet cases request RFA."""
 
 
-def choose_states(policy_id: str, case_type: CaseType, rng: random.Random, critical: set[str]) -> dict[str, str]:
+def choose_states(
+    policy_id: str, case_type: CaseType, rng: random.Random, critical: set[str]
+) -> dict[str, str]:
     """Pick a state per unit for the case type.
 
     A: all present. B: one or two units absent or vague. C: one unit failing
     (critical criteria preferred). D: one unit in a tricky state.
     """
     units = UNITS[policy_id]
-    states = {unit.name: rng.choice(["present", *[s for s in ALT_MET_STATES if s in unit.states]]) for unit in units}
+    states = {
+        unit.name: rng.choice(
+            ["present", *[s for s in ALT_MET_STATES if s in unit.states]]
+        )
+        for unit in units
+    }
     if case_type is CaseType.FIXABLE_GAP:
         for unit in rng.sample(list(units), k=rng.choice([1, 2])):
             options = [s for s in GAP_STATES if s in unit.states]
@@ -548,7 +602,9 @@ def choose_states(policy_id: str, case_type: CaseType, rng: random.Random, criti
     return states
 
 
-def plan_case(checklist: Checklist, case_type: CaseType, rng: random.Random) -> CaseSpec:
+def plan_case(
+    checklist: Checklist, case_type: CaseType, rng: random.Random
+) -> CaseSpec:
     """Plan one case: states, plants, dates, context and declared gold statuses.
 
     Raises:
@@ -581,7 +637,11 @@ def plan_from_states(
     """
     policy_id = checklist.id
     units = UNITS[policy_id]
-    unknown = {name: state for name, state in states.items() if state not in _unit(units, name).states}
+    unknown = {
+        name: state
+        for name, state in states.items()
+        if state not in _unit(units, name).states
+    }
     if unknown:
         raise PlanError(f"unknown states for {policy_id}: {unknown}")
     plants: list[Plant] = []
@@ -592,10 +652,15 @@ def plan_from_states(
         outcome = unit.states[states[unit.name]](dates)
         plants.extend(outcome.plants)
         expected.update(outcome.expected)
-        if states[unit.name] == "absent":
+        state = states[unit.name]
+        if state == "absent":
             absent.append(unit.absent_topic)
             if unit.forbidden:
                 forbidden.append(unit.forbidden)
+        elif state in unit.hidden:
+            topic, pattern = unit.hidden[state]
+            absent.append(topic)
+            forbidden.append(pattern)
     focus = _focus(units, states, rng)
     spec = CaseSpec(
         policy_id=policy_id,
@@ -607,7 +672,8 @@ def plan_from_states(
         dates=dates,
         absent_topics=tuple(absent),
         forbidden=tuple(forbidden),
-        focus_criterion=focus,
+        focus_criterion=focus.criterion_ids[0],
+        focus_state=states[focus.name],
     )
     verify_plan(spec, checklist)
     return spec
@@ -618,7 +684,9 @@ def find_phrase(text: str, phrase: str) -> int:
     return text.lower().find(phrase.lower())
 
 
-def planted_evidence(plants: tuple[Plant, ...], texts: dict[str, str]) -> list[Evidence]:
+def planted_evidence(
+    plants: tuple[Plant, ...], texts: dict[str, str]
+) -> list[Evidence]:
     """Gold Evidence for each plant at its first occurrence in its note, ignoring case.
 
     The gold ``span_text`` is the note's own text at that position, so it keeps
@@ -632,7 +700,9 @@ def planted_evidence(plants: tuple[Plant, ...], texts: dict[str, str]) -> list[E
         text = texts.get(plant.doc_id, "")
         start = find_phrase(text, plant.phrase)
         if start < 0:
-            raise PlanError(f"phrase {plant.phrase!r} not found in note {plant.doc_id!r}")
+            raise PlanError(
+                f"phrase {plant.phrase!r} not found in note {plant.doc_id!r}"
+            )
         span = text[start : start + len(plant.phrase)]
         evidence.extend(
             Evidence(
@@ -662,11 +732,22 @@ def verify_plan(spec: CaseSpec, checklist: Checklist) -> dict[str, CriterionStat
     texts: dict[str, str] = {}
     for plant in spec.plants:
         texts[plant.doc_id] = texts.get(plant.doc_id, "") + plant.phrase + "\n"
-    verdict = run_rules(checklist, planted_evidence(spec.plants, texts), spec.context, lambda _c, _s: "gap")
+    verdict = run_rules(
+        checklist,
+        planted_evidence(spec.plants, texts),
+        spec.context,
+        lambda _c, _s: "gap",
+    )
     got = {result.criterion_id: result.status for result in verdict.results}
     if got != spec.expected:
-        diff = {cid: (spec.expected.get(cid), got.get(cid)) for cid in got if got[cid] != spec.expected.get(cid)}
-        raise PlanError(f"{spec.policy_id} plan {spec.states}: declared vs engine differ {diff}")
+        diff = {
+            cid: (spec.expected.get(cid), got.get(cid))
+            for cid in got
+            if got[cid] != spec.expected.get(cid)
+        }
+        raise PlanError(
+            f"{spec.policy_id} plan {spec.states}: declared vs engine differ {diff}"
+        )
     return {**got, "__overall__": verdict.overall}
 
 
@@ -678,8 +759,10 @@ def _unit(units: tuple[Unit, ...], name: str) -> Unit:
     raise PlanError(f"no unit {name!r}")
 
 
-def _focus(units: tuple[Unit, ...], states: dict[str, str], rng: random.Random) -> str:
-    """The criterion the denial reason names: the changed unit, or any unit for type A."""
-    changed = [u for u in units if states[u.name] != "present"]
-    unit = changed[0] if changed else rng.choice(list(units))
-    return unit.criterion_ids[0]
+def _focus(units: tuple[Unit, ...], states: dict[str, str], rng: random.Random) -> Unit:
+    """The unit the denial reason names: the first one not met, or any unit for type A.
+
+    An alternate way of meeting (oxygen Group II) is met, so it is never the focus.
+    """
+    changed = [u for u in units if states[u.name] not in ("present", *ALT_MET_STATES)]
+    return changed[0] if changed else rng.choice(list(units))

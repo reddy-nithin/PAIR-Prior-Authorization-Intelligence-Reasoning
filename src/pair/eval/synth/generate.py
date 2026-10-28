@@ -2,6 +2,7 @@
 
 import logging
 import random
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -41,7 +42,9 @@ class CaseRequest:
     seed: int
 
 
-def suite(policy_ids: list[str], base_seed: int, per_policy: int = len(TYPE_MIX)) -> list[CaseRequest]:
+def suite(
+    policy_ids: list[str], base_seed: int, per_policy: int = len(TYPE_MIX)
+) -> list[CaseRequest]:
     """The case list: ``per_policy`` cases per policy, types cycled from ``TYPE_MIX``."""
     return [
         CaseRequest(
@@ -70,6 +73,7 @@ def generate_case(
     """
     rng = random.Random(request.seed)
     spec = plan_case(checklist, request.case_type, rng)
+    profile = without_conditions(profile, spec.forbidden)
     written = write_notes(spec, profile, checklist.title, client)
     texts = {note.doc_id: note.text for note in written.notes}
     gold_evidence = planted_evidence(spec.plants, texts)
@@ -77,7 +81,9 @@ def generate_case(
     statuses = {result.criterion_id: result.status for result in verdict.results}
     if statuses != spec.expected:
         raise PlanError(f"{request.case_id}: gold statuses changed after note writing")
-    letter = render_denial(checklist.id, spec.focus_criterion, spec.dates["denial"], rng)
+    letter = render_denial(
+        checklist.id, spec.focus_criterion, spec.focus_state, spec.dates["denial"], rng
+    )
     logger.info(
         "%s: type %s, states %s, overall %s, notes in %d attempt(s)",
         request.case_id, request.case_type.value, spec.states, verdict.overall.value, written.attempts,
@@ -99,8 +105,31 @@ def generate_case(
         seed=request.seed,
         generator={**generator, "note_attempts": str(written.attempts)},
         usage_prompt_tokens=sum(u.prompt_tokens or 0 for u in written.usage),
-        usage_output_tokens=sum((u.output_tokens or 0) + (u.thinking_tokens or 0) for u in written.usage),
+        usage_output_tokens=sum(
+            (u.output_tokens or 0) + (u.thinking_tokens or 0) for u in written.usage
+        ),
     )
+
+
+def without_conditions(
+    profile: PatientProfile, patterns: Sequence[str]
+) -> PatientProfile:
+    """Drop profile conditions that match a leak pattern, so the history can't fill a hidden fact.
+
+    Example: essential hypertension qualifies an AHI of 5 to 14 (L33718), so it can't stay
+    in a case whose symptoms are planted as negated (Step 8, dev pap-osa-09).
+    """
+    kept = [
+        c
+        for c in profile.conditions
+        if not any(re.search(p, c, flags=re.IGNORECASE) for p in patterns)
+    ]
+    if len(kept) == len(profile.conditions):
+        return profile
+    logger.info(
+        "dropped profile conditions %s", sorted(set(profile.conditions) - set(kept))
+    )
+    return profile.model_copy(update={"conditions": kept})
 
 
 AUDIT_SHARE: float = 0.2
@@ -154,7 +183,9 @@ def generate_suite(
             continue
         profile = profiles[index % len(profiles)]
         try:
-            case = generate_case(request, checklists[request.policy_id], profile, client, generator)
+            case = generate_case(
+                request, checklists[request.policy_id], profile, client, generator
+            )
         except (NoteGenerationError, PlanError) as exc:
             logger.error("%s failed: %s", request.case_id, exc)
             summary.failed.append((request.case_id, str(exc)))
@@ -176,7 +207,11 @@ def _write_audit(requests: Sequence[CaseRequest], out_dir: Path) -> None:
     for policy_id, items in sorted(by_policy.items()):
         count = max(1, round(len(items) * AUDIT_SHARE))
         rng = random.Random(policy_id)
-        picked = sorted(rng.sample(items, k=min(count, len(items))), key=lambda r: r.case_id)
-        lines.extend(f"- [ ] `{r.case_id}` (type {r.case_type.value}) · notes:" for r in picked)
+        picked = sorted(
+            rng.sample(items, k=min(count, len(items))), key=lambda r: r.case_id
+        )
+        lines.extend(
+            f"- [ ] `{r.case_id}` (type {r.case_type.value}) · notes:" for r in picked
+        )
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "AUDIT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")

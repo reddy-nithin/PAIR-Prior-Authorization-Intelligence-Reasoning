@@ -15,7 +15,7 @@ from typing import Any
 
 from pair.contracts import Checklist
 from pair.eval.cases import CaseBundle, CaseLoadError, load_case
-from pair.eval.synth.denials import REASONS
+from pair.eval.synth.denials import reason_categories
 from pair.eval.synth.planners import UNITS
 from pair.policies.mcd import MCDDocument, MCDDocumentNotFound, MCDExport
 from pair.policies.select import normalize_ref
@@ -24,9 +24,26 @@ from pair.rules.engine import RuleEngineError, run_rules
 logger = logging.getLogger(__name__)
 
 _NUMBER = r"(\d+(?:\.\d+)?)"
-_LABEL_BEFORE = re.compile(r"^\s*([A-Za-z][A-Za-z%\- ]*?)\s*(?:of|is|was|=|:)?\s*" + _NUMBER)
+_LABEL_BEFORE = re.compile(
+    r"^\s*([A-Za-z][A-Za-z%\- ]*?)\s*(?:of|is|was|=|:)?\s*" + _NUMBER
+)
 _LABEL_AFTER = re.compile(r"^\s*" + _NUMBER + r"\s+([A-Za-z][A-Za-z\- ]*[A-Za-z])")
-_FILLER = frozenset({"for", "of", "on", "at", "in", "with", "about", "since", "after", "over", "is", "was"})
+_FILLER = frozenset(
+    {
+        "for",
+        "of",
+        "on",
+        "at",
+        "in",
+        "with",
+        "about",
+        "since",
+        "after",
+        "over",
+        "is",
+        "was",
+    }
+)
 """Words too common to name a value ("for 8 months" has no label)."""
 
 
@@ -61,7 +78,9 @@ class PrecheckFinding:
         return {**asdict(self), "severity": self.severity.value}
 
 
-def check_case(case: CaseBundle, checklists: Mapping[str, Checklist]) -> list[PrecheckFinding]:
+def check_case(
+    case: CaseBundle, checklists: Mapping[str, Checklist]
+) -> list[PrecheckFinding]:
     """Run every mechanical check on one loaded case.
 
     Span offsets are already checked by ``CaseBundle`` when it loads.
@@ -75,29 +94,52 @@ def check_case(case: CaseBundle, checklists: Mapping[str, Checklist]) -> list[Pr
     """
     checklist = checklists.get(case.policy_id)
     if checklist is None:
-        return [PrecheckFinding(case.id, "M0", case.policy_id, Severity.BLOCKER, "policy not loaded")]
+        return [
+            PrecheckFinding(
+                case.id, "M0", case.policy_id, Severity.BLOCKER, "policy not loaded"
+            )
+        ]
     try:
         findings = _check_labels(case, checklist)
     except RuleEngineError as error:
         logger.error("%s: rule engine rejected the gold evidence: %s", case.id, error)
-        return [PrecheckFinding(case.id, "M0", "gold_evidence", Severity.BLOCKER, f"rule engine error: {error}")]
-    return findings + _check_absent_leaks(case) + _check_second_values(case) + _check_denial(case)
+        return [
+            PrecheckFinding(
+                case.id,
+                "M0",
+                "gold_evidence",
+                Severity.BLOCKER,
+                f"rule engine error: {error}",
+            )
+        ]
+    return (
+        findings
+        + _check_absent_leaks(case)
+        + _check_second_values(case)
+        + _check_denial(case)
+    )
 
 
-def precheck_paths(paths: Sequence[Path], checklists: Mapping[str, Checklist]) -> list[PrecheckFinding]:
+def precheck_paths(
+    paths: Sequence[Path], checklists: Mapping[str, Checklist]
+) -> list[PrecheckFinding]:
     """Load and check each case file; a file that won't load is an M0 blocker."""
     findings: list[PrecheckFinding] = []
     for path in paths:
         try:
             case = load_case(path)
         except CaseLoadError as error:
-            findings.append(PrecheckFinding(path.stem, "M0", "file", Severity.BLOCKER, str(error)))
+            findings.append(
+                PrecheckFinding(path.stem, "M0", "file", Severity.BLOCKER, str(error))
+            )
             continue
         findings.extend(check_case(case, checklists))
     return findings
 
 
-def check_policy_sources(checklists: Mapping[str, Checklist], export: MCDExport) -> list[PrecheckFinding]:
+def check_policy_sources(
+    checklists: Mapping[str, Checklist], export: MCDExport
+) -> list[PrecheckFinding]:
     """P1 (mechanical part): each criterion's clause appears verbatim in its MCD source."""
     findings: list[PrecheckFinding] = []
     for checklist in checklists.values():
@@ -107,22 +149,38 @@ def check_policy_sources(checklists: Mapping[str, Checklist], export: MCDExport)
             source = sources[criterion.source_id]
             if source.id not in docs:
                 try:
-                    docs[source.id] = export.find_ncd(source.id) if source.type == "NCD" else export.find_lcd(source.id)
+                    docs[source.id] = (
+                        export.find_ncd(source.id)
+                        if source.type == "NCD"
+                        else export.find_lcd(source.id)
+                    )
                 except MCDDocumentNotFound as error:
                     logger.error("policy %s: %s", checklist.id, error)
                     docs[source.id] = None
             doc = docs[source.id]
             if doc is None or not doc.contains(criterion.clause):
-                where = "source not in the MCD export" if doc is None else f"not verbatim in {doc.id} v{doc.version}"
+                where = (
+                    "source not in the MCD export"
+                    if doc is None
+                    else f"not verbatim in {doc.id} v{doc.version}"
+                )
                 findings.append(
-                    PrecheckFinding(f"policy:{checklist.id}", "P1", criterion.id, Severity.BLOCKER, f"clause {where}")
+                    PrecheckFinding(
+                        f"policy:{checklist.id}",
+                        "P1",
+                        criterion.id,
+                        Severity.BLOCKER,
+                        f"clause {where}",
+                    )
                 )
     return findings
 
 
 def _check_labels(case: CaseBundle, checklist: Checklist) -> list[PrecheckFinding]:
     """L1/L2: the rule engine on the gold evidence reproduces the gold labels."""
-    verdict = run_rules(checklist, case.gold_evidence, case.context, lambda _c, _s: "gap")
+    verdict = run_rules(
+        checklist, case.gold_evidence, case.context, lambda _c, _s: "gap"
+    )
     findings = [
         PrecheckFinding(
             case.id, "L1", result.criterion_id, Severity.BLOCKER,
@@ -132,22 +190,34 @@ def _check_labels(case: CaseBundle, checklist: Checklist) -> list[PrecheckFindin
         if case.gold_statuses.get(result.criterion_id) is not result.status
     ]  # fmt: skip
     if verdict.overall is not case.gold_overall:
-        message = f"gold overall {case.gold_overall}, policy logic gives {verdict.overall}"
-        findings.append(PrecheckFinding(case.id, "L2", "overall", Severity.BLOCKER, message))
+        message = (
+            f"gold overall {case.gold_overall}, policy logic gives {verdict.overall}"
+        )
+        findings.append(
+            PrecheckFinding(case.id, "L2", "overall", Severity.BLOCKER, message)
+        )
     return findings
 
 
 def _check_absent_leaks(case: CaseBundle) -> list[PrecheckFinding]:
-    """K1: a unit meant to be missing has no matching value anywhere (the generator's leak regex)."""
+    """K1: a unit meant to be missing, or a vague or negated one, has no leaked value (the generator's leak regex)."""
     joined = "\n".join(note.text for note in case.notes)
     findings: list[PrecheckFinding] = []
     for unit in UNITS.get(case.policy_id, ()):
-        if case.states.get(unit.name) != "absent" or not unit.forbidden:
+        state = case.states.get(unit.name, "")
+        pattern = (
+            unit.forbidden if state == "absent" else unit.hidden.get(state, ("", ""))[1]
+        )
+        if not pattern:
             continue
-        match = re.search(unit.forbidden, joined, flags=re.IGNORECASE)
+        match = re.search(pattern, joined, flags=re.IGNORECASE)
         if match:
-            message = f'"{match.group()}" appears but {unit.name} is meant to be missing'
-            findings.append(PrecheckFinding(case.id, "K1", unit.name, Severity.BLOCKER, message))
+            message = (
+                f'"{match.group()}" appears but {unit.name} is meant to be {state}'
+            )
+            findings.append(
+                PrecheckFinding(case.id, "K1", unit.name, Severity.BLOCKER, message)
+            )
     return findings
 
 
@@ -174,7 +244,11 @@ def _check_second_values(case: CaseBundle) -> list[PrecheckFinding]:
                     if float(number) not in gold[variable] and number not in seen:
                         seen.add(number)
                         message = f'{note.doc_id} has "{name}" with {number}, gold {variable} is {sorted(gold[variable])}'
-                        findings.append(PrecheckFinding(case.id, "K2", variable, Severity.MAJOR, message))
+                        findings.append(
+                            PrecheckFinding(
+                                case.id, "K2", variable, Severity.MAJOR, message
+                            )
+                        )
     return findings
 
 
@@ -197,7 +271,9 @@ def _label(span: str, value: float) -> str:
 def _numbers_near(text: str, label: str) -> list[str]:
     """Numbers right before or right after ``label`` in ``text``."""
     name = re.escape(label)
-    before = re.findall(rf"\b{name}\b[^\d\n.;]{{0,6}}{_NUMBER}", text, flags=re.IGNORECASE)
+    before = re.findall(
+        rf"\b{name}\b[^\d\n.;]{{0,6}}{_NUMBER}", text, flags=re.IGNORECASE
+    )
     after = re.findall(rf"{_NUMBER}\s+{name}\b", text, flags=re.IGNORECASE)
     return before + after
 
@@ -217,14 +293,24 @@ def _check_denial(case: CaseBundle) -> list[PrecheckFinding]:
     if " ".join(gold.service.split()) not in flat:
         missing.append("service")
     findings = [
-        PrecheckFinding(case.id, "D1", field, Severity.BLOCKER, f"gold_denial {field} is not in the letter")
+        PrecheckFinding(
+            case.id,
+            "D1",
+            field,
+            Severity.BLOCKER,
+            f"gold_denial {field} is not in the letter",
+        )
         for field in missing
     ]
-    categories = {category for category, reason in REASONS.values() if reason == gold.reason_text}
+    categories = reason_categories(gold.reason_text)
     if categories and gold.reason_category not in categories:
         message = f"reason_category {gold.reason_category} but the reason template is {sorted(categories)}"
-        findings.append(PrecheckFinding(case.id, "D2", "reason_category", Severity.MAJOR, message))
+        findings.append(
+            PrecheckFinding(case.id, "D2", "reason_category", Severity.MAJOR, message)
+        )
     elif not categories:
         message = "reason text matches no denial template"
-        findings.append(PrecheckFinding(case.id, "D2", "reason_text", Severity.MAJOR, message))
+        findings.append(
+            PrecheckFinding(case.id, "D2", "reason_text", Severity.MAJOR, message)
+        )
     return findings

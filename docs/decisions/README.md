@@ -34,6 +34,7 @@ The baseline plan documents (`docs/blueprint-v2.md`, `docs/insurance-companion.m
 | 0013 | Adversarial critic for audits, with source-backed verdicts | Accepted | 2026-10-22 |
 | 0015 | Rule changes from the Step 7 rule review | Accepted | 2026-10-23 |
 | 0016 | Policy finder for unsupported denials, on Vertex AI Search | Proposed | 2026-10-23 |
+| 0017 | Test and dev case sets use different patients | Accepted | 2026-10-28 |
 
 ## Template
 

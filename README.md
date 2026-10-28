@@ -35,7 +35,7 @@ PAIR is built and tested on synthetic patients only. No real patient data goes i
 
 The Step 7 rule review ([docs/audit/rule-review.md](docs/audit/rule-review.md), [ADR-0015](docs/decisions/0015-rule-review-changes.md)) left these out of the rules on purpose:
 
-- **PAP:** a re-evaluation after day 91 counts, but coverage restarts only from that visit's date; PAIR says so in the criterion text and doesn't compute the gap. The 120-day deadline for an E0470 swap, the trial pause for a hospital or nursing-facility stay, and whether the re-evaluation was in person aren't modeled.
+- **PAP:** a re-evaluation after day 91 counts, but coverage restarts only from that visit's date; PAIR says so in the criterion text and doesn't compute the gap. The 120-day deadline for an E0470 swap, the trial pause for a hospital or nursing-facility stay, and whether the face-to-face evaluation before the sleep test or the re-evaluation was in person, with the treating practitioner, aren't modeled. PAIR checks only their dates.
 - **Facet joint:** PAIR doesn't check that the same pain scale was used at baseline, after each diagnostic block and at each follow-up (L38841 footnote). Blocks less than 2 weeks apart come out unmet even when the record documents the clinical exception the LCD allows.
 
 ### Interpretations

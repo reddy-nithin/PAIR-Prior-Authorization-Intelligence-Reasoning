@@ -25,7 +25,10 @@ NOTE_SCHEMA: dict[str, object] = {
 }
 
 TITLES: dict[str, dict[str, str]] = {
-    "pap-osa": {CLINIC: "Sleep medicine clinic notes", REPORT: "Diagnostic home sleep test report and CPAP device download"},
+    "pap-osa": {
+        CLINIC: "Sleep medicine clinic notes",
+        REPORT: "Diagnostic home sleep test report and CPAP device download",
+    },
     "home-oxygen": {CLINIC: "Pulmonology clinic note", REPORT: "Oxygen testing report"},
     "facet-joint": {CLINIC: "Pain clinic note", REPORT: "Imaging and procedure report"},
 }
@@ -34,6 +37,10 @@ POLICY_NOTES: dict[str, str] = {
     "pap-osa": (
         "The AHI, event counts and recording time belong to the diagnostic sleep test, done before CPAP started. "
         "Report them only there, never as CPAP device data.\n"
+    ),
+    "home-oxygen": (
+        "All oxygen values in the oxygen testing report come from one test. Date that test only with a date "
+        "given in the phrases, and don't describe another test.\n"
     ),
     "facet-joint": (
         "Date the clinic note {visit}, and date each imaging or block result before it. The radiofrequency "
@@ -62,6 +69,7 @@ report:
 {report_phrases}
 
 Do not state any other value, date or result for the facts in those phrases.
+Do not say whether the patient meets any coverage or diagnostic criteria.
 {policy_notes}{absent_block}Write in a plain clinical style with common abbreviations. No markdown, no headings with #."""
 
 RETRY: str = """
@@ -89,7 +97,9 @@ def build_prompt(spec: CaseSpec, profile: PatientProfile, topic: str) -> str:
     titles = TITLES[spec.policy_id]
 
     def phrases(doc_id: str) -> str:
-        items = sorted({plant.phrase for plant in spec.plants if plant.doc_id == doc_id})
+        items = sorted(
+            {plant.phrase for plant in spec.plants if plant.doc_id == doc_id}
+        )
         return "\n".join(f'- "{item}"' for item in items) or "- (none)"
 
     absent = ""
@@ -109,7 +119,9 @@ def build_prompt(spec: CaseSpec, profile: PatientProfile, topic: str) -> str:
         report_title=titles[REPORT],
         clinic_phrases=phrases(CLINIC),
         report_phrases=phrases(REPORT),
-        policy_notes=POLICY_NOTES.get(spec.policy_id, "").format(visit=spec.dates["visit"].strftime("%m/%d/%Y")),
+        policy_notes=POLICY_NOTES.get(spec.policy_id, "").format(
+            visit=spec.dates["visit"].strftime("%m/%d/%Y")
+        ),
         absent_block=absent,
     )
 
@@ -125,11 +137,15 @@ def check_notes(spec: CaseSpec, texts: dict[str, str]) -> list[str]:
     for pattern in spec.forbidden:
         match = re.search(pattern, joined, flags=re.IGNORECASE)
         if match:
-            problems.append(f'"{match.group()}" must not appear (that information is meant to be missing)')
+            problems.append(
+                f'"{match.group()}" must not appear (that information is meant to be missing)'
+            )
     return list(dict.fromkeys(problems))
 
 
-def write_notes(spec: CaseSpec, profile: PatientProfile, topic: str, client: LLMClient) -> WrittenNotes:
+def write_notes(
+    spec: CaseSpec, profile: PatientProfile, topic: str, client: LLMClient
+) -> WrittenNotes:
     """Generate the two notes for a case, retrying until the planted-span check passes.
 
     Raises:
@@ -140,18 +156,29 @@ def write_notes(spec: CaseSpec, profile: PatientProfile, topic: str, client: LLM
     usage: list[LLMUsage] = []
     problems: list[str] = []
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        full = prompt if attempt == 1 else prompt + RETRY.format(problems="\n".join(f"- {p}" for p in problems))
+        full = (
+            prompt
+            if attempt == 1
+            else prompt + RETRY.format(problems="\n".join(f"- {p}" for p in problems))
+        )
         try:
             result = client.generate_json(full, NOTE_SCHEMA)
         except LLMResponseError as exc:
             problems = [f"the answer was not valid JSON ({exc})"]
             continue
         usage.append(result.usage)
-        texts = {doc_id: HEADER + str(result.data.get(doc_id, "")).strip() for doc_id in (CLINIC, REPORT)}
+        texts = {
+            doc_id: HEADER + str(result.data.get(doc_id, "")).strip()
+            for doc_id in (CLINIC, REPORT)
+        }
         problems = check_notes(spec, texts)
         if not problems:
             titles = TITLES[spec.policy_id]
-            notes = tuple(Note(doc_id=d, title=titles[d], text=texts[d]) for d in (CLINIC, REPORT))
+            notes = tuple(
+                Note(doc_id=d, title=titles[d], text=texts[d]) for d in (CLINIC, REPORT)
+            )
             return WrittenNotes(notes=notes, attempts=attempt, usage=tuple(usage))
         logger.warning("notes attempt %d rejected: %s", attempt, problems)
-    raise NoteGenerationError(f"notes failed the planted-span check {MAX_ATTEMPTS} times: {problems}")
+    raise NoteGenerationError(
+        f"notes failed the planted-span check {MAX_ATTEMPTS} times: {problems}"
+    )

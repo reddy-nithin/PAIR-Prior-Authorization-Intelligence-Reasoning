@@ -29,14 +29,21 @@ _PAP_TEXT = (
 _OXYGEN_TEXT = (
     "SYNTHETIC EXAMPLE. Pulmonology visit 03/03/2026: I ordered resting oximetry and reviewed the results "
     "with the patient. Outpatient, no recent hospital stay. Tested during this visit while short of breath. "
-    "Hospital outpatient lab arterial blood gas 03/03/2026 at rest on room air: PaO2 54 mmHg, SpO2 87%. "
+    "Arterial blood gas 03/03/2026 at rest on room air: PaO2 54 mmHg, SpO2 87%. "
+    "Testing was performed by the hospital's clinical laboratory. "
     "Mild ankle edema. No pulmonary hypertension on echo. "
     "Plan: home oxygen is expected to improve dyspnea and exercise tolerance."
 )
 
 _OXYGEN_INPATIENT_TEXT = (
     "SYNTHETIC EXAMPLE. Hospital discharge summary: admitted for a COPD exacerbation. "
-    "Arterial blood gas 04/13/2026 at rest on room air: PaO2 53 mmHg. Discharged home 04/14/2026 on 2 L oxygen."
+    "Arterial blood gas 04/13/2026 at rest on room air: PaO2 53 mmHg. The inpatient laboratory ran the study. "
+    "Discharged home 04/14/2026 on 2 L oxygen."
+)
+
+_OXYGEN_SUPPLIER_TEXT = (
+    "SYNTHETIC EXAMPLE. Overnight oximetry 05/02/2026 done at home by a respiratory therapist from the "
+    "home medical equipment company that supplies the oxygen."
 )
 
 _FACET_TEXT = (
@@ -78,8 +85,8 @@ EXAMPLES: dict[str, list[Example]] = {
                 _x("practitioner_ordered_and_reviewed", "I ordered resting oximetry and reviewed the results", "true"),
                 _x("rx_from_inpatient_stay", "Outpatient, no recent hospital stay", "false"),
                 _x("symptoms_noted_at_test", "Tested during this visit while short of breath", "true"),
-                _x("test_date", "arterial blood gas 03/03/2026", "2026-03-03"),
-                _x("tested_by_qualified_provider", "Hospital outpatient lab arterial blood gas", "true"),
+                _x("test_date", "Arterial blood gas 03/03/2026", "2026-03-03"),
+                _x("tested_by_qualified_provider", "Testing was performed by the hospital's clinical laboratory", "true"),
                 _x("at_rest_on_room_air", "at rest on room air", "true"),
                 _x("pao2", "PaO2 54 mmHg", "54"),
                 _x("spo2", "SpO2 87%", "87"),
@@ -95,7 +102,19 @@ EXAMPLES: dict[str, list[Example]] = {
                 _x("test_date", "Arterial blood gas 04/13/2026", "2026-04-13"),
                 _x("at_rest_on_room_air", "at rest on room air", "true"),
                 _x("pao2", "PaO2 53 mmHg", "53"),
+                _x("tested_by_qualified_provider", "The inpatient laboratory ran the study", "true"),
                 _x("discharge_date", "Discharged home 04/14/2026", "2026-04-14"),
+            ],
+        ),
+        Example(
+            text=_OXYGEN_SUPPLIER_TEXT,
+            extractions=[
+                _x("test_date", "Overnight oximetry 05/02/2026", "2026-05-02"),
+                _x(
+                    "tested_by_qualified_provider",
+                    "by a respiratory therapist from the home medical equipment company that supplies the oxygen",
+                    "false",
+                ),
             ],
         ),
     ],
