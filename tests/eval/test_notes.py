@@ -128,6 +128,12 @@ def test_check_ignores_capitalization_and_gold_span_uses_note_text() -> None:
         ("home-oxygen", "home_benefit", "Oxygen is expected to help."),
         ("home-oxygen", "qualified_tester", "The test was performed by the hospital laboratory."),
         ("pap-osa", "reevaluation", "Follow-up in clinic went well."),
+        ("facet-joint", "pain_and_function", "She reports moderate low back pain."),
+        ("facet-joint", "no_untreated_radiculopathy", "Leg pain with walking suggests neurogenic claudication."),
+        ("facet-joint", "no_untreated_radiculopathy", "There is no associated weakness or numbness."),
+        ("facet-joint", "no_untreated_radiculopathy", "Neurological exam is grossly intact."),
+        ("facet-joint", "no_untreated_radiculopathy", "Neuro intact."),
+        ("facet-joint", "no_untreated_radiculopathy", "Non-radiating low back pain."),
     ],
 )
 def test_absent_units_catch_leaks(policy_id: str, unit: str, leak: str) -> None:
@@ -138,4 +144,44 @@ def test_absent_units_catch_leaks(policy_id: str, unit: str, leak: str) -> None:
         texts[plant.doc_id] += plant.phrase + ". "
     assert check_notes(spec, texts) == []
     texts["clinic"] = texts.get("clinic", "") + leak
+    assert check_notes(spec, texts)
+
+
+def test_prompt_forbids_mentioning_absent_topics_even_as_negations() -> None:
+    """'No weakness or numbness' fills a radiculopathy gap, so absent topics can't be negated either (seed-10)."""
+    prompt = build_prompt(spec_with("facet-joint", no_untreated_radiculopathy="absent"), PROFILE, "facet")
+    assert "not even to say they are absent or normal" in prompt
+
+
+def test_pap_prompt_puts_ahi_in_the_diagnostic_study() -> None:
+    """The LCD measures AHI without PAP, so the AHI must not read as a CPAP-download value (pap-osa-08)."""
+    prompt = build_prompt(spec_with(), PROFILE, "PAP")
+    assert "diagnostic sleep test, done before CPAP" in prompt
+    assert "never as CPAP device data" in prompt
+
+
+def test_facet_prompt_dates_notes_and_keeps_rfa_planned() -> None:
+    """Facet notes carry the visit date, and the requested RFA hasn't been done yet."""
+    spec = spec_with("facet-joint")
+    prompt = build_prompt(spec, PROFILE, "facet")
+    assert spec.dates["visit"].strftime("%m/%d/%Y") in prompt
+    assert "has not been done yet" in prompt
+
+
+@pytest.mark.parametrize(("sex", "pronouns"), [("F", "she/her"), ("M", "he/him")])
+def test_prompt_names_pronouns_for_the_profile_sex(sex: str, pronouns: str) -> None:
+    """The writer is told which pronouns to use (pap-osa-04 called a woman "He")."""
+    profile = PROFILE.model_copy(update={"sex": sex})
+    assert f"Refer to the patient as {pronouns}" in build_prompt(spec_with(), profile, "PAP")
+
+
+def test_dates_in_facet_notes_are_not_pain_scores() -> None:
+    """Facet notes are dated now, and "04/10/2026" is not a pain score of 4/10."""
+    spec = spec_with("facet-joint", pain_and_function="absent")
+    texts = {p.doc_id: "" for p in spec.plants}
+    for plant in spec.plants:
+        texts[plant.doc_id] += plant.phrase + ". "
+    texts["clinic"] += "Seen 04/10/2026."
+    assert check_notes(spec, texts) == []
+    texts["clinic"] += " Pain is 4/10."
     assert check_notes(spec, texts)

@@ -15,9 +15,19 @@ from typing import Any
 import langextract as lx
 from langextract.resolver import ResolverParsingError
 
-from pair.contracts import Checklist, Evidence, EvidenceStatus, VariableType
+from pair.contracts import (
+    Checklist,
+    Evidence,
+    EvidenceStatus,
+    EvidenceValue,
+    VariableType,
+)
 from pair.extract.examples import examples_for
-from pair.extract.normalize import normalize
+from pair.extract.normalize import (
+    PAIN_SCORE_VARIABLES,
+    normalize,
+    pain_on_ten_point_scale,
+)
 from pair.extract.tolerant_format import TolerantFormatHandler
 from pair.llm import TEMPERATURE, Backend, LLMConfig
 
@@ -195,6 +205,11 @@ def _targets(checklist: Checklist) -> dict[str, list[tuple[str, VariableType]]]:
     return targets
 
 
+def _scaled(variable: str, value: EvidenceValue, span: str) -> EvidenceValue:
+    """Pain scores go on the 0 to 10 scale the rules use; other values pass through."""
+    return pain_on_ten_point_scale(value, span) if variable in PAIN_SCORE_VARIABLES else value
+
+
 def _evidence(
     extraction: Any,
     text: str,
@@ -212,7 +227,7 @@ def _evidence(
         Evidence(
             criterion_id=criterion_id,
             variable=extraction.extraction_class,
-            value=normalize(var_type, raw),
+            value=_scaled(extraction.extraction_class, normalize(var_type, raw), span),
             span_text=span,
             char_start=start,
             char_end=end,

@@ -18,14 +18,25 @@ sources:
     retrieved: 2026-10-15
 criteria:
   - id: ordered_and_evaluated
-    text: Your treating practitioner ordered the oxygen test, reviewed it, and it was done when you needed oxygen
+    text: >-
+      Your treating practitioner ordered the oxygen test and reviewed it, and it was done when you
+      needed oxygen: within 2 days before leaving the hospital, or otherwise while your practitioner
+      noted symptoms oxygen can relieve (NCD 240.2; ADR-0015)
     clause: >-
       The treating practitioner has ordered and evaluated the results of a qualifying blood gas
       study performed at the time of need
     source_id: L33797
     evidence_type: encounter
-    variables: {practitioner_ordered_and_reviewed: bool, tested_at_time_of_need: bool}
-    rule: "practitioner_ordered_and_reviewed and tested_at_time_of_need"
+    variables:
+      practitioner_ordered_and_reviewed: bool
+      rx_from_inpatient_stay: bool
+      test_date: date
+      discharge_date: date
+      symptoms_noted_at_test: bool
+    rule: >-
+      practitioner_ordered_and_reviewed
+      and (not rx_from_inpatient_stay or within_days(test_date, discharge_date, 2))
+      and (rx_from_inpatient_stay or symptoms_noted_at_test)
     critical: true
   - id: qualified_tester
     text: The test was done by your practitioner or a qualified lab, not by the oxygen supplier

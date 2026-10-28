@@ -25,15 +25,29 @@ NOTE_SCHEMA: dict[str, object] = {
 }
 
 TITLES: dict[str, dict[str, str]] = {
-    "pap-osa": {CLINIC: "Sleep medicine clinic notes", REPORT: "Home sleep test and CPAP device report"},
+    "pap-osa": {CLINIC: "Sleep medicine clinic notes", REPORT: "Diagnostic home sleep test report and CPAP device download"},
     "home-oxygen": {CLINIC: "Pulmonology clinic note", REPORT: "Oxygen testing report"},
     "facet-joint": {CLINIC: "Pain clinic note", REPORT: "Imaging and procedure report"},
 }
 
+POLICY_NOTES: dict[str, str] = {
+    "pap-osa": (
+        "The AHI, event counts and recording time belong to the diagnostic sleep test, done before CPAP started. "
+        "Report them only there, never as CPAP device data.\n"
+    ),
+    "facet-joint": (
+        "Date the clinic note {visit}, and date each imaging or block result before it. The radiofrequency "
+        "ablation (RFA) is being requested and has not been done yet; describe it only as planned.\n"
+    ),
+}
+"""Per-policy realism rules (seeded-test.md findings 5 and 6); ``{visit}`` is the visit date."""
+
+PRONOUNS: dict[str, str] = {"F": "she/her", "M": "he/him"}
+
 PROMPT: str = """Write two short synthetic medical documents for a fictional Medicare patient.
 They are test data for software; nothing is about a real person. Do not use any names.
 
-Patient: {age}-year-old {sex}. Other history: {conditions}.
+Patient: {age}-year-old {sex}. Other history: {conditions}. Refer to the patient as {pronouns}.
 Topic: {topic}.
 
 Return JSON with two fields:
@@ -48,7 +62,7 @@ report:
 {report_phrases}
 
 Do not state any other value, date or result for the facts in those phrases.
-{absent_block}Write in a plain clinical style with common abbreviations. No markdown, no headings with #."""
+{policy_notes}{absent_block}Write in a plain clinical style with common abbreviations. No markdown, no headings with #."""
 
 RETRY: str = """
 
@@ -81,16 +95,21 @@ def build_prompt(spec: CaseSpec, profile: PatientProfile, topic: str) -> str:
     absent = ""
     if spec.absent_topics:
         topics = "; ".join(spec.absent_topics)
-        absent = f"Leave these out completely, they must not appear anywhere: {topics}.\n"
+        absent = (
+            "Leave these out completely, they must not appear anywhere, "
+            f"not even to say they are absent or normal: {topics}.\n"
+        )
     return PROMPT.format(
         age=profile.age,
         sex="woman" if profile.sex == "F" else "man",
         conditions=", ".join(profile.conditions) or "none notable",
+        pronouns=PRONOUNS[profile.sex],
         topic=topic,
         clinic_title=titles[CLINIC],
         report_title=titles[REPORT],
         clinic_phrases=phrases(CLINIC),
         report_phrases=phrases(REPORT),
+        policy_notes=POLICY_NOTES.get(spec.policy_id, "").format(visit=spec.dates["visit"].strftime("%m/%d/%Y")),
         absent_block=absent,
     )
 

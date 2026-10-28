@@ -31,7 +31,10 @@ criteria:
     rule: "days_between(evaluation_date, sleep_test_date) >= 0"
     critical: true
   - id: ahi_threshold
-    text: Sleep test AHI or RDI of 15 or more, or 5 to 14 with qualifying symptoms or conditions
+    text: >-
+      Sleep test AHI or RDI of 15 or more, or 5 up to 15 with qualifying symptoms or conditions. A
+      test with less than 2 hours of sleep or recording time also needs at least 30 events (10 with
+      symptoms) (ADR-0015)
     clause: >-
       The apnea-hypopnea index (AHI) or Respiratory Disturbance Index (RDI) is greater than or
       equal to 15 events per hour with a minimum of 30 events; or, The AHI or RDI is greater
@@ -40,8 +43,11 @@ criteria:
       disorders, or insomnia; or, Hypertension, ischemic heart disease, or history of stroke.
     source_id: L33718
     evidence_type: lab_value
-    variables: {ahi: number, event_count: number, symptoms_or_conditions: list}
-    rule: "(ahi >= 15 and event_count >= 30) or (5 <= ahi <= 14 and event_count >= 10 and len(symptoms_or_conditions) > 0)"
+    variables: {ahi: number, sleep_or_recording_hours: number, event_count: number, symptoms_or_conditions: list}
+    rule: >-
+      (ahi >= 15 and (sleep_or_recording_hours >= 2 or event_count >= 30))
+      or (5 <= ahi < 15 and (sleep_or_recording_hours >= 2 or event_count >= 10)
+      and len(symptoms_or_conditions) > 0)
     critical: true
   - id: adherence
     text: Used PAP at least 4 hours a night on 70% of nights in 30 days in a row, within the first 3 months
@@ -54,7 +60,10 @@ criteria:
     rule: "pct_nights_4h_best_30d >= 70 and window_in_first_90_days"
     critical: true
   - id: reevaluation
-    text: A follow-up visit between day 31 and day 91 showing PAP is helping
+    text: >-
+      A follow-up visit no sooner than day 31 after you started PAP (the start date is day 1)
+      showing PAP is helping. A visit after day 91 still counts, but coverage restarts from that
+      visit's date (ADR-0015)
     clause: >-
       Continued coverage of a PAP device (E0470 or E0601) beyond the first three months of therapy
       requires that, no sooner than the 31st day but no later than the 91st day after initiating
@@ -63,6 +72,6 @@ criteria:
     source_id: L33718
     evidence_type: encounter
     variables: {therapy_start_date: date, reevaluation_date: date, symptoms_improved: bool}
-    rule: "days_between(therapy_start_date, reevaluation_date) >= 30 and within_days(therapy_start_date, reevaluation_date, 90) and symptoms_improved"
+    rule: "days_between(therapy_start_date, reevaluation_date) >= 30 and symptoms_improved"
     critical: false
 logic: "f2f_visit and ahi_threshold and (initial or (adherence and reevaluation))"

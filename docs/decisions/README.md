@@ -32,6 +32,7 @@ The baseline plan documents (`docs/blueprint-v2.md`, `docs/insurance-companion.m
 | 0011 | LLM placement: Gemma 4 E4B on the lab server, E2B on the laptop | Accepted | 2026-10-16 |
 | 0012 | Rule evaluation semantics: three-valued logic and evidence binding | Accepted | 2026-10-16 |
 | 0013 | Adversarial critic for audits, with source-backed verdicts | Accepted | 2026-10-22 |
+| 0015 | Rule changes from the Step 7 rule review | Accepted | 2026-10-23 |
 
 ## Template
 

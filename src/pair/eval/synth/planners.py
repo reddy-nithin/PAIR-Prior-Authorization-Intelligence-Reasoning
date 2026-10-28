@@ -132,6 +132,7 @@ def _pap_dates(rng: random.Random) -> dict[str, dt.date]:
         "start": start,
         "reeval": start + dt.timedelta(days=rng.randint(40, 80)),
         "late_reeval": start + dt.timedelta(days=rng.randint(110, 140)),
+        "early_reeval": start + dt.timedelta(days=20),
         "denial": start + dt.timedelta(days=rng.randint(95, 105)),
     }
 
@@ -177,24 +178,28 @@ PAP_UNITS: tuple[Unit, ...] = (
         {
             "present": lambda d: _out(
                 {AHI: MET},
+                _p(AHI, "sleep_or_recording_hours", "total recording time 6.2 hours", 6.2, REPORT),
                 _p(AHI, "ahi", "AHI 22.4 events/hour", 22.4, REPORT),
                 _p(AHI, "event_count", "131 total respiratory events", 131, REPORT),
                 _p(AHI, "symptoms_or_conditions", "daytime sleepiness", ["daytime sleepiness"], CLINIC),
             ),
             "failing": lambda d: _out(
                 {AHI: UNMET},
+                _p(AHI, "sleep_or_recording_hours", "total recording time 6.8 hours", 6.8, REPORT),
                 _p(AHI, "ahi", "AHI 3.1 events/hour", 3.1, REPORT),
                 _p(AHI, "event_count", "18 total respiratory events", 18, REPORT),
             ),
             "absent": lambda d: _out({AHI: INSUFFICIENT}),
             "negated": lambda d: _out(
                 {AHI: INSUFFICIENT},
+                _p(AHI, "sleep_or_recording_hours", "total recording time 5.9 hours", 5.9, REPORT),
                 _p(AHI, "ahi", "AHI 9.6 events/hour", 9.6, REPORT),
                 _p(AHI, "event_count", "52 total respiratory events", 52, REPORT),
                 _p(AHI, "symptoms_or_conditions", "denies daytime sleepiness", ["daytime sleepiness"], CLINIC, "negated"),
             ),
             "conflicting": lambda d: _out(
                 {AHI: INSUFFICIENT},
+                _p(AHI, "sleep_or_recording_hours", "total recording time 6.4 hours", 6.4, REPORT),
                 _p(AHI, "ahi", "AHI 18.2 events/hour", 18.2, REPORT),
                 _p(AHI, "event_count", "106 total respiratory events", 106, REPORT),
                 _p(AHI, "ahi", "AHI of 11.0", 11.0, CLINIC),
@@ -255,7 +260,7 @@ PAP_UNITS: tuple[Unit, ...] = (
             "out_of_window": lambda d: _out(
                 {REEVAL: UNMET},
                 _p(REEVAL, "therapy_start_date", f"CPAP started {_d(d['start'])}", d["start"], CLINIC),
-                _p(REEVAL, "reevaluation_date", f"Follow-up visit {_d(d['late_reeval'])}", d["late_reeval"], CLINIC),
+                _p(REEVAL, "reevaluation_date", f"Follow-up visit {_d(d['early_reeval'])}", d["early_reeval"], CLINIC),
                 _p(REEVAL, "symptoms_improved", "sleepiness much improved on CPAP", True, CLINIC),
             ),
         },
@@ -270,7 +275,13 @@ PAP_UNITS: tuple[Unit, ...] = (
 
 def _oxygen_dates(rng: random.Random) -> dict[str, dt.date]:
     visit = dt.date(2026, 2, 2) + dt.timedelta(days=rng.randint(0, 150))
-    return {"visit": visit, "denial": visit + dt.timedelta(days=rng.randint(10, 30))}
+    discharge = visit - dt.timedelta(days=7)
+    return {
+        "visit": visit,
+        "denial": visit + dt.timedelta(days=rng.randint(10, 30)),
+        "discharge": discharge,
+        "early_inpatient_test": discharge - dt.timedelta(days=4),
+    }
 
 
 ORD = "ordered_and_evaluated"
@@ -286,12 +297,16 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
             "present": lambda d: _out(
                 {ORD: MET},
                 _p(ORD, "practitioner_ordered_and_reviewed", "I ordered resting oximetry and reviewed the results", True, CLINIC),
-                _p(ORD, "tested_at_time_of_need", "tested during this visit while short of breath", True, CLINIC),
+                _p(ORD, "rx_from_inpatient_stay", "seen as an outpatient, no recent hospital stay", False, CLINIC),
+                _p(ORD, "symptoms_noted_at_test", "tested during this visit while short of breath", True, CLINIC),
             ),
             "failing": lambda d: _out(
                 {ORD: UNMET},
-                _p(ORD, "practitioner_ordered_and_reviewed", "I ordered resting oximetry and reviewed the results", True, CLINIC),
-                _p(ORD, "tested_at_time_of_need", "test was done 6 weeks after recovery, when stable", False, CLINIC),
+                _p(ORD, "practitioner_ordered_and_reviewed", "I ordered an arterial blood gas and reviewed the results", True, CLINIC),
+                _p(ORD, "rx_from_inpatient_stay", "home oxygen was first ordered at hospital discharge", True, CLINIC),
+                _p(ORD, "test_date", f"inpatient arterial blood gas {_d(d['early_inpatient_test'])}",
+                   d["early_inpatient_test"], CLINIC),
+                _p(ORD, "discharge_date", f"discharged home {_d(d['discharge'])}", d["discharge"], CLINIC),
             ),
             "absent": lambda d: _out({ORD: INSUFFICIENT}),
         },
@@ -340,8 +355,8 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
             "conflicting": lambda d: _out(
                 {G1: INSUFFICIENT, G2: INSUFFICIENT},
                 _p(G1, "at_rest_on_room_air", "at rest on room air", True, REPORT),
-                _p((G1, G2), "spo2", "SpO2 87%", 87, REPORT),
-                _p((G1, G2), "spo2", "oxygen saturation of 93%", 93, CLINIC),
+                _p((G1, G2), "spo2", "SpO2 87% at rest on room air", 87, REPORT),
+                _p((G1, G2), "spo2", "repeat SpO2 at rest on room air was 93%", 93, CLINIC),
             ),
         },
         "any oxygen level, saturation or blood gas numbers",
@@ -357,7 +372,7 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
             ),
             "failing": lambda d: _out(
                 {HB: UNMET},
-                _p(HB, "expected_to_improve", "home oxygen is not expected to change her symptoms", False, CLINIC),
+                _p(HB, "expected_to_improve", "home oxygen is not expected to change the patient's symptoms", False, CLINIC),
             ),
             "absent": lambda d: _out({HB: INSUFFICIENT}),
         },
@@ -372,7 +387,12 @@ OXYGEN_UNITS: tuple[Unit, ...] = (
 
 def _facet_dates(rng: random.Random) -> dict[str, dt.date]:
     visit = dt.date(2026, 1, 12) + dt.timedelta(days=rng.randint(0, 160))
-    return {"visit": visit, "denial": visit + dt.timedelta(days=rng.randint(10, 30))}
+    return {
+        "visit": visit,
+        "denial": visit + dt.timedelta(days=rng.randint(10, 30)),
+        "block1": visit - dt.timedelta(days=60),
+        "block2": visit - dt.timedelta(days=39),
+    }
 
 
 PF = "pain_and_function"
@@ -391,6 +411,7 @@ FACET_UNITS: tuple[Unit, ...] = (
                 _p(PF, "pain_is_axial", "axial low back pain", True, CLINIC),
                 _p(PF, "pain_score", "rated 7/10", 7, CLINIC),
                 _p(PF, "functional_deficit_documented", "limits walking and work (ODI 42%)", True, CLINIC),
+                _p(PF, "disability_scale_at_baseline", "baseline Oswestry Disability Index on file", True, CLINIC),
             ),
             "failing": lambda d: _out(
                 {PF: UNMET},
@@ -402,12 +423,12 @@ FACET_UNITS: tuple[Unit, ...] = (
             "vague": lambda d: _out(
                 {PF: INSUFFICIENT},
                 _p(PF, "pain_is_axial", "axial low back pain", True, CLINIC),
-                _p(PF, "pain_score", "moderate pain", None, CLINIC),
+                _p(PF, "pain_score", "bothersome back pain", None, CLINIC),
                 _p(PF, "functional_deficit_documented", "limits walking and work (ODI 42%)", True, CLINIC),
             ),
         },
-        "a pain score or how the pain limits function",
-        r"\b\d+\s*/\s*10\b|ODI",
+        "a pain score or rating (mild, moderate, severe) or how the pain limits function",
+        r"\b\d+\s*/\s*10\b(?!/)|ODI|\b(?:mild|moderate|severe)(?:ly)?\b[^.]{0,30}\bpain\b",
     ),
     Unit(
         DUR,
@@ -433,16 +454,19 @@ FACET_UNITS: tuple[Unit, ...] = (
         (RAD,),
         {
             "present": lambda d: _out(
-                {RAD: MET}, _p(RAD, "untreated_radiculopathy", "No radicular symptoms", False, CLINIC)
+                {RAD: MET},
+                _p(RAD, "untreated_radiculopathy", "No radicular symptoms", False, CLINIC),
+                _p(RAD, "untreated_neurogenic_claudication", "no neurogenic claudication", False, CLINIC),
             ),
             "failing": lambda d: _out(
                 {RAD: UNMET},
                 _p(RAD, "untreated_radiculopathy", "untreated L5 radiculopathy with pain below the knee", True, CLINIC),
+                _p(RAD, "radiculopathy_from_synovial_cyst", "no synovial cyst on MRI", False, REPORT),
             ),
             "absent": lambda d: _out({RAD: INSUFFICIENT}),
         },
-        "radiating leg pain, radiculopathy or nerve symptoms",
-        r"radicul|radiat|sciatica",
+        "radiating leg pain, radiculopathy, neurogenic claudication or nerve symptoms",
+        r"radicul|radiat|sciatica|claudicat|weakness|tingling|\bneuro(?:logic(?:al)?(?:ly)?)?\b[^.]{0,30}\bintact\b",
     ),
     Unit(
         PATH,
@@ -466,6 +490,10 @@ FACET_UNITS: tuple[Unit, ...] = (
             "present": lambda d: _out(
                 {BLK: MET},
                 _p(BLK, "blocks_with_80pct_relief", "Two medial branch blocks each gave 85% relief", 2, REPORT),
+                _p(BLK, "relief_duration_consistent_with_agent", "relief lasted as long as expected for the anesthetic used",
+                   True, REPORT),
+                _p(BLK, "first_block_date", f"first block {_d(d['block1'])}", d["block1"], REPORT),
+                _p(BLK, "second_block_date", f"second block {_d(d['block2'])}", d["block2"], REPORT),
             ),
             "failing": lambda d: _out(
                 {BLK: UNMET},

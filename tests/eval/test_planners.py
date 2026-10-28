@@ -1,6 +1,7 @@
 """Every planned state must give the gold statuses the rule engine computes (T9)."""
 
 import random
+import re
 
 import pytest
 
@@ -90,6 +91,51 @@ def test_absent_units_list_topics_and_forbidden_patterns() -> None:
     spec = plan_from_states(checklist, CaseType.FIXABLE_GAP, states, DATES["pap-osa"](rng), rng)
     assert any("AHI" in topic for topic in spec.absent_topics)
     assert spec.forbidden
+
+
+def test_facet_vague_pain_is_not_a_verbal_rating() -> None:
+    """A verbal "moderate"/"severe" now meets the rule (ADR-0015), so the vague phrase can't be one."""
+    outcome = next(u for u in UNITS["facet-joint"] if u.name == "pain_and_function").states["vague"]({})
+    phrase = next(p.phrase for p in outcome.plants if p.variable == "pain_score").lower()
+    assert not any(word in phrase for word in ("mild", "moderate", "severe"))
+
+
+def test_oxygen_conflict_readings_share_test_conditions() -> None:
+    """Both conflicting SpO2 readings are at rest on room air, or they aren't a conflict (seed-02)."""
+    outcome = next(u for u in UNITS["home-oxygen"] if u.name == "blood_gas").states["conflicting"]({})
+    readings = [p.phrase.lower() for p in outcome.plants if p.variable == "spo2"]
+    assert len(readings) == 2
+    assert all("at rest" in r and "room air" in r for r in readings)
+
+
+def test_oxygen_failing_time_of_need_is_an_inpatient_test_outside_two_days() -> None:
+    """The failing state is a real L33797 failure: inpatient test more than 2 days before discharge (seed-06)."""
+    dates = DATES["home-oxygen"](random.Random(4))
+    outcome = next(u for u in UNITS["home-oxygen"] if u.name == "ordered_and_evaluated").states["failing"](dates)
+    values = {p.variable: p.value for p in outcome.plants}
+    assert values["rx_from_inpatient_stay"] is True
+    assert (values["discharge_date"] - values["test_date"]).days > 2
+
+
+def test_pap_sleep_test_states_give_recording_time() -> None:
+    """A sleep report with an AHI number also states its recording time, in the report."""
+    unit = next(u for u in UNITS["pap-osa"] if u.name == "ahi_threshold")
+    for name, state in unit.states.items():
+        plants = state({})
+        if any(p.variable == "ahi" and p.value is not None for p in plants.plants):
+            hours = [p for p in plants.plants if p.variable == "sleep_or_recording_hours"]
+            assert hours and all(p.doc_id == "report" for p in hours), name
+
+
+def test_plant_phrases_use_no_gendered_pronouns() -> None:
+    """Phrases are planted for patients of either sex, so they can't say he or she (pap-osa-04)."""
+    pronoun = re.compile(r"\b(he|she|his|her|him|hers)\b", re.IGNORECASE)
+    for policy_id, units in UNITS.items():
+        dates = DATES[policy_id](random.Random(0))
+        for unit in units:
+            for name, state in unit.states.items():
+                for plant in state(dates).plants:
+                    assert not pronoun.search(plant.phrase), (policy_id, unit.name, name, plant.phrase)
 
 
 def test_unknown_state_or_policy_raises() -> None:
