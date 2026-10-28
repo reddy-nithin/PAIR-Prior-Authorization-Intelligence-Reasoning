@@ -33,6 +33,7 @@ The baseline plan documents (`docs/blueprint-v2.md`, `docs/insurance-companion.m
 | 0012 | Rule evaluation semantics: three-valued logic and evidence binding | Accepted | 2026-10-16 |
 | 0013 | Adversarial critic for audits, with source-backed verdicts | Accepted | 2026-10-22 |
 | 0015 | Rule changes from the Step 7 rule review | Accepted | 2026-10-23 |
+| 0016 | Policy finder for unsupported denials, on Vertex AI Search | Proposed | 2026-10-23 |
 
 ## Template
 
@@ -68,4 +69,3 @@ References, links, related ADRs.
 - Keep ADRs short: 1 page preferred, 2 pages maximum
 - If an ADR starts running long, split it into multiple smaller ADRs
 - Link between ADRs with relative paths: `See [ADR-0003](0003-gemma-4-e4b.md)`
-| 0016 | Policy finder for unsupported denials, on Vertex AI Search | Proposed | 2026-10-23 |
