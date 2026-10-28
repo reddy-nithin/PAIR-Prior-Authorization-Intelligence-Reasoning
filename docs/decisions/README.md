@@ -68,3 +68,4 @@ References, links, related ADRs.
 - Keep ADRs short: 1 page preferred, 2 pages maximum
 - If an ADR starts running long, split it into multiple smaller ADRs
 - Link between ADRs with relative paths: `See [ADR-0003](0003-gemma-4-e4b.md)`
+| 0016 | Policy finder for unsupported denials, on Vertex AI Search | Proposed | 2026-10-23 |
