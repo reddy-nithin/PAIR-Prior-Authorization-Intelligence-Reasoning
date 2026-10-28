@@ -18,7 +18,9 @@ CHECKLISTS = load_all(REPO_ROOT / "policies")
 GEN = {"backend": "fake", "model": "fake-writer"}
 
 
-def make(policy_id: str = "pap-osa", case_type: CaseType = CaseType.TRICKY, seed: int = 11) -> CaseBundle:
+def make(
+    policy_id: str = "pap-osa", case_type: CaseType = CaseType.TRICKY, seed: int = 11
+) -> CaseBundle:
     """Generate one case with the fake writer."""
     request = CaseRequest(f"{policy_id}-01", policy_id, case_type, seed)
     return generate_case(request, CHECKLISTS[policy_id], PROFILE, PhraseWriter(), GEN)
@@ -48,7 +50,9 @@ def test_generated_case_is_consistent(policy_id: str, case_type: CaseType) -> No
     texts = case.record_text()
     for item in case.gold_evidence:
         assert texts[item.doc_id][item.char_start : item.char_end] == item.span_text
-    verdict = run_rules(CHECKLISTS[policy_id], case.gold_evidence, case.context, lambda _c, _s: "g")
+    verdict = run_rules(
+        CHECKLISTS[policy_id], case.gold_evidence, case.context, lambda _c, _s: "g"
+    )
     assert {r.criterion_id: r.status for r in verdict.results} == case.gold_statuses
     assert verdict.overall is case.gold_overall
     assert case.gold_denial.service in case.denial_text
@@ -76,8 +80,11 @@ def test_bundle_rejects_a_span_that_does_not_slice_its_note() -> None:
     """The bundle validator catches wrong offsets and unknown notes."""
     case = make()
     data = case.model_dump()
-    data["gold_evidence"][0] = {**data["gold_evidence"][0], "char_start": data["gold_evidence"][0]["char_start"] + 1,
-                                "char_end": data["gold_evidence"][0]["char_end"] + 1}
+    data["gold_evidence"][0] = {
+        **data["gold_evidence"][0],
+        "char_start": data["gold_evidence"][0]["char_start"] + 1,
+        "char_end": data["gold_evidence"][0]["char_end"] + 1,
+    }
     with pytest.raises(ValueError, match="does not match"):
         CaseBundle.model_validate(data)
     data = case.model_dump()
@@ -92,7 +99,7 @@ def test_bundle_rejects_a_span_that_does_not_slice_its_note() -> None:
 
 def test_repeated_identical_phrase_keeps_gold() -> None:
     """A planted phrase repeated with the same value is not a conflict; the first occurrence is the gold span."""
-    writer = PhraseWriter(extra="AHI 22.4 events/hour")
+    writer = PhraseWriter(extra="AHI 21.1 events/hour")
     request = CaseRequest("pap-osa-01", "pap-osa", CaseType.WRONGLY_DENIED, 3)
     case = generate_case(request, CHECKLISTS["pap-osa"], PROFILE, writer, GEN)
     assert case.gold_overall is CriterionStatus.MET
@@ -104,7 +111,10 @@ def test_plan_error_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def fake_run_rules(*args: object, **kwargs: object):  # type: ignore[no-untyped-def]
         verdict = run_rules(*args, **kwargs)  # type: ignore[arg-type]
-        results = [r.model_copy(update={"status": CriterionStatus.UNMET}) for r in verdict.results]
+        results = [
+            r.model_copy(update={"status": CriterionStatus.UNMET})
+            for r in verdict.results
+        ]
         return verdict.model_copy(update={"results": results})
 
     monkeypatch.setattr(gen, "run_rules", fake_run_rules)
@@ -118,7 +128,9 @@ def test_generate_suite_writes_cases_and_audit(tmp_path: Path) -> None:
 
     requests = suite(sorted(CHECKLISTS), base_seed=1, per_policy=10)
     profiles = [PROFILE, PROFILE.model_copy(update={"synthea_id": "syn-2", "sex": "M"})]
-    summary = generate_suite(requests, CHECKLISTS, profiles, PhraseWriter(), tmp_path, GEN)
+    summary = generate_suite(
+        requests, CHECKLISTS, profiles, PhraseWriter(), tmp_path, GEN
+    )
     assert summary.written == 30
     assert summary.failed == []
     assert summary.prompt_tokens == 100 * 30
@@ -127,7 +139,9 @@ def test_generate_suite_writes_cases_and_audit(tmp_path: Path) -> None:
     assert audit.count("- [ ] `") == 6
     for policy_id in CHECKLISTS:
         assert audit.count(f"`{policy_id}-") == 2
-    again = generate_suite(requests, CHECKLISTS, profiles, PhraseWriter(), tmp_path, GEN)
+    again = generate_suite(
+        requests, CHECKLISTS, profiles, PhraseWriter(), tmp_path, GEN
+    )
     assert again.written == 0
     assert again.skipped == 30
 
@@ -141,7 +155,10 @@ def test_generate_suite_records_failures(tmp_path: Path) -> None:
     class Dropper(PhraseWriter):
         def generate_json(self, prompt, schema):  # type: ignore[no-untyped-def]
             result = super().generate_json(prompt, schema)
-            data = {k: v.replace("CPAP started", "CPAP began") for k, v in result.data.items()}
+            data = {
+                k: v.replace("CPAP started", "CPAP began")
+                for k, v in result.data.items()
+            }
             return result.__class__(**{**result.__dict__, "data": data})
 
     summary = generate_suite(requests, CHECKLISTS, [PROFILE], Dropper(), tmp_path, GEN)
@@ -154,4 +171,18 @@ def test_generate_suite_needs_profiles(tmp_path: Path) -> None:
     from pair.eval.synth.generate import generate_suite
 
     with pytest.raises(ValueError, match="profiles"):
-        generate_suite(suite(["pap-osa"], 1, 1), CHECKLISTS, [], PhraseWriter(), tmp_path, GEN)
+        generate_suite(
+            suite(["pap-osa"], 1, 1), CHECKLISTS, [], PhraseWriter(), tmp_path, GEN
+        )
+
+
+def test_profile_conditions_that_fill_a_hidden_fact_are_dropped() -> None:
+    """Hypertension qualifies AHI 5 to 14, so it can't stay in a negated-symptoms profile (Step 8, B4)."""
+    from pair.eval.synth.generate import without_conditions
+
+    profile = PROFILE.model_copy(
+        update={"conditions": ["Essential hypertension", "Obesity"]}
+    )
+    kept = without_conditions(profile, (r"hypertens",))
+    assert kept.conditions == ["Obesity"]
+    assert without_conditions(profile, ()) == profile

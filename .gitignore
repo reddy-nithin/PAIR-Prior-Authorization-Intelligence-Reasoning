@@ -17,6 +17,7 @@ data/*
 # --- Agent files: private, never committed ---
 CLAUDE.md
 .claude/
+.agent/
 
 # --- Notebooks ---
 .ipynb_checkpoints/

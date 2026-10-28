@@ -26,7 +26,9 @@ def spec_with(policy_id: str = "pap-osa", **states: str):  # type: ignore[no-unt
     rng = random.Random(5)
     all_states = {u.name: "present" for u in UNITS[policy_id]}
     all_states.update(states)
-    return plan_from_states(CHECKLISTS[policy_id], CaseType.TRICKY, all_states, DATES[policy_id](rng), rng)
+    return plan_from_states(
+        CHECKLISTS[policy_id], CaseType.TRICKY, all_states, DATES[policy_id](rng), rng
+    )
 
 
 def test_prompt_lists_phrases_per_document_and_absent_topics() -> None:
@@ -45,7 +47,7 @@ def test_check_catches_a_missing_phrase() -> None:
     spec = spec_with()
     texts = {"clinic": "nothing here", "report": "nothing"}
     problems = check_notes(spec, texts)
-    assert any("AHI 22.4 events/hour" in p for p in problems)
+    assert any("AHI 21.1 events/hour" in p for p in problems)
 
 
 def test_check_catches_leaked_absent_values() -> None:
@@ -69,15 +71,15 @@ def test_writer_passes_first_time_and_adds_header() -> None:
 
 def test_writer_retries_with_the_problem() -> None:
     """A missing phrase is fed back and the second attempt can pass."""
-    writer = PhraseWriter(drop="AHI 22.4 events/hour", fail_times=1)
+    writer = PhraseWriter(drop="AHI 21.1 events/hour", fail_times=1)
     written = write_notes(spec_with(), PROFILE, "PAP", writer)
     assert written.attempts == 2
-    assert "AHI 22.4 events/hour" in writer.prompts[1].split("rejected:")[1]
+    assert "AHI 21.1 events/hour" in writer.prompts[1].split("rejected:")[1]
 
 
 def test_writer_gives_up_after_max_attempts() -> None:
     """Three failed checks raise NoteGenerationError."""
-    writer = PhraseWriter(drop="AHI 22.4 events/hour", fail_times=99)
+    writer = PhraseWriter(drop="AHI 21.1 events/hour", fail_times=99)
     with pytest.raises(NoteGenerationError, match="planted-span"):
         write_notes(spec_with(), PROFILE, "PAP", writer)
     assert len(writer.prompts) == 3
@@ -122,18 +124,54 @@ def test_check_ignores_capitalization_and_gold_span_uses_note_text() -> None:
 @pytest.mark.parametrize(
     ("policy_id", "unit", "leak"),
     [
-        ("facet-joint", "no_untreated_radiculopathy", "He denies any radiating leg pain or radiculopathy."),
+        (
+            "facet-joint",
+            "no_untreated_radiculopathy",
+            "He denies any radiating leg pain or radiculopathy.",
+        ),
         ("facet-joint", "no_other_pathology", "MRI shows no fracture."),
-        ("facet-joint", "duration_and_conservative_care", "Pain for 6 months despite physical therapy."),
+        (
+            "facet-joint",
+            "duration_and_conservative_care",
+            "Pain for 6 months despite physical therapy.",
+        ),
         ("home-oxygen", "home_benefit", "Oxygen is expected to help."),
-        ("home-oxygen", "qualified_tester", "The test was performed by the hospital laboratory."),
+        (
+            "home-oxygen",
+            "qualified_tester",
+            "The test was performed by the hospital laboratory.",
+        ),
         ("pap-osa", "reevaluation", "Follow-up in clinic went well."),
         ("facet-joint", "pain_and_function", "She reports moderate low back pain."),
-        ("facet-joint", "no_untreated_radiculopathy", "Leg pain with walking suggests neurogenic claudication."),
-        ("facet-joint", "no_untreated_radiculopathy", "There is no associated weakness or numbness."),
-        ("facet-joint", "no_untreated_radiculopathy", "Neurological exam is grossly intact."),
+        (
+            "facet-joint",
+            "no_untreated_radiculopathy",
+            "Leg pain with walking suggests neurogenic claudication.",
+        ),
+        (
+            "facet-joint",
+            "no_untreated_radiculopathy",
+            "There is no associated weakness or numbness.",
+        ),
+        (
+            "facet-joint",
+            "no_untreated_radiculopathy",
+            "Neurological exam is grossly intact.",
+        ),
         ("facet-joint", "no_untreated_radiculopathy", "Neuro intact."),
         ("facet-joint", "no_untreated_radiculopathy", "Non-radiating low back pain."),
+        (
+            "facet-joint",
+            "no_untreated_radiculopathy",
+            "Neurological examination of the lower extremities is completely intact.",
+        ),
+        (
+            "pap-osa",
+            "f2f_visit",
+            "She presents for evaluation of obstructive sleep apnea.",
+        ),
+        ("home-oxygen", "qualified_tester", "She was tested in the office today."),
+        ("home-oxygen", "qualified_tester", "She was tested during this visit."),
     ],
 )
 def test_absent_units_catch_leaks(policy_id: str, unit: str, leak: str) -> None:
@@ -149,7 +187,9 @@ def test_absent_units_catch_leaks(policy_id: str, unit: str, leak: str) -> None:
 
 def test_prompt_forbids_mentioning_absent_topics_even_as_negations() -> None:
     """'No weakness or numbness' fills a radiculopathy gap, so absent topics can't be negated either (seed-10)."""
-    prompt = build_prompt(spec_with("facet-joint", no_untreated_radiculopathy="absent"), PROFILE, "facet")
+    prompt = build_prompt(
+        spec_with("facet-joint", no_untreated_radiculopathy="absent"), PROFILE, "facet"
+    )
     assert "not even to say they are absent or normal" in prompt
 
 
@@ -172,7 +212,9 @@ def test_facet_prompt_dates_notes_and_keeps_rfa_planned() -> None:
 def test_prompt_names_pronouns_for_the_profile_sex(sex: str, pronouns: str) -> None:
     """The writer is told which pronouns to use (pap-osa-04 called a woman "He")."""
     profile = PROFILE.model_copy(update={"sex": sex})
-    assert f"Refer to the patient as {pronouns}" in build_prompt(spec_with(), profile, "PAP")
+    assert f"Refer to the patient as {pronouns}" in build_prompt(
+        spec_with(), profile, "PAP"
+    )
 
 
 def test_dates_in_facet_notes_are_not_pain_scores() -> None:
@@ -185,3 +227,37 @@ def test_dates_in_facet_notes_are_not_pain_scores() -> None:
     assert check_notes(spec, texts) == []
     texts["clinic"] += " Pain is 4/10."
     assert check_notes(spec, texts)
+
+
+@pytest.mark.parametrize(
+    ("state", "leak"),
+    [
+        ("vague", "AHI of 18.5."),
+        ("vague", "18 events per hour."),
+        ("negated", "History of essential hypertension."),
+    ],
+)
+def test_hidden_states_catch_leaks(state: str, leak: str) -> None:
+    """A vague AHI can't state a number, and negated symptoms can't sit next to a qualifying condition (Step 8)."""
+    spec = spec_with(ahi_threshold=state)
+    texts = {p.doc_id: "" for p in spec.plants}
+    for plant in spec.plants:
+        texts[plant.doc_id] += plant.phrase + ". "
+    assert check_notes(spec, texts) == []
+    texts["clinic"] += leak
+    assert check_notes(spec, texts)
+
+
+def test_prompt_forbids_coverage_verdicts() -> None:
+    """Notes must not say a test "meets the diagnostic criteria" (Step 8, R1 and K2)."""
+    assert (
+        "Do not say whether the patient meets any coverage or diagnostic criteria"
+        in build_prompt(spec_with(), PROFILE, "PAP")
+    )
+
+
+def test_oxygen_prompt_keeps_one_reported_test() -> None:
+    """The report's values belong to its one test, so a date can't sit on a second test (Step 8, B1)."""
+    assert "come from one test" in build_prompt(
+        spec_with("home-oxygen"), PROFILE, "oxygen"
+    )
