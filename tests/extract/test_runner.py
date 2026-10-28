@@ -278,3 +278,15 @@ def test_pain_score_on_a_hundred_point_vas_is_rescaled() -> None:
         note, "note-1", CHECKLISTS["facet-joint"], LLMConfig.from_env({}), extract_fn=FakeExtract([extraction])
     )
     assert [e.value for e in result.evidence] == [3.5]
+
+
+def test_a_date_must_be_readable_from_its_own_span() -> None:
+    """An undated mention ('Home sleep test') gets no date, even if the model fills one (dev-v4 pap-osa-01)."""
+    result = run([ext("sleep_test_date", "Home sleep test", "2026-02-02")])
+    assert result.evidence[0].value is None
+
+
+def test_a_dated_span_keeps_its_date() -> None:
+    """The span holds the date, so the model's value stands."""
+    result = run([ext("sleep_test_date", "Home sleep test 02/02/2026", "2026-02-02")])
+    assert result.evidence[0].value == dt.date(2026, 2, 2)
