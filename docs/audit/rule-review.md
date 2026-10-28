@@ -20,7 +20,7 @@ Run 2026-10-23. The audit critic ([ADR-0013](../decisions/0013-adversarial-criti
 - **NCD 240.4 v3** (https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?ncdid=226&ncdver=3) says the same in terms of "less than 2 hours of continuous recorded sleep".
 - **Contractor:** Noridian's PAP documentation checklist lists the minimum counts alongside the AHI (critic-research.md §1; not re-fetched).
 - **Finding (P2 blocker, P1 major):** the old rule demanded `event_count` on every test, so a full-night study reporting only its AHI came out insufficient. Over 2 hours or more, an AHI at the threshold already implies the count (15 × 2 = 30, 5 × 2 = 10). The qualifier sits in the definitions, outside the YAML clause.
-- **New rule:** `(ahi >= 15 and (sleep_or_recording_hours >= 2 or event_count >= 30)) or (5 <= ahi <= 14 and (sleep_or_recording_hours >= 2 or event_count >= 10) and len(symptoms_or_conditions) > 0)`
+- **New rule:** `(ahi >= 15 and (sleep_or_recording_hours >= 2 or event_count >= 30)) or (5 <= ahi < 15 and (sleep_or_recording_hours >= 2 or event_count >= 10) and len(symptoms_or_conditions) > 0)`
 - **Boundary tests:** `tests/policies/test_real_policies.py::test_pap_event_minimum_applies_only_under_two_hours` covers 2.0 hours, 1.5 hours with 29/30 and 9/10 events, missing hours, and AHI 14.5.
 
 ## 2. PAP re-evaluation window: keep (day 1), now documented

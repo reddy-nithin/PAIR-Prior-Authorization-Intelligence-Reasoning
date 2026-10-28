@@ -38,6 +38,14 @@ The Step 7 rule review ([docs/audit/rule-review.md](docs/audit/rule-review.md), 
 - **PAP:** a re-evaluation after day 91 counts, but coverage restarts only from that visit's date; PAIR says so in the criterion text and doesn't compute the gap. The 120-day deadline for an E0470 swap, the trial pause for a hospital or nursing-facility stay, and whether the re-evaluation was in person aren't modeled.
 - **Facet joint:** PAIR doesn't check that the same pain scale was used at baseline, after each diagnostic block and at each follow-up (L38841 footnote). Blocks less than 2 weeks apart come out unmet even when the record documents the clinical exception the LCD allows.
 
+### Interpretations
+
+The policy text doesn't settle these points, so PAIR picks a reading. Each one is PAIR's choice, not CMS guidance:
+
+- **Facet "moderate" pain:** L38841 gives no number. PAIR treats a pain score of 4 or more out of 10, or a verbal "moderate" or "severe" rating, as moderate to severe. Boonstra et al. 2014 put the start of "moderate" at 3.5, so a score of 3.5 comes out unmet under PAIR's cut-off.
+- **PAP re-evaluation window:** L33718 says "no sooner than the 31st day but no later than the 91st day" without saying how to count. PAIR counts the start date as day 1, so the visit must be at least 30 days after the start.
+- **Facet baseline disability scale and sustained relief:** PAIR requires a baseline disability scale and block relief that lasted as long as the agent should. Both follow the LCD's wording, but notes rarely state them, so many facet records come out insufficient. The two Step 7 critics read the baseline disability requirement differently; PAIR applies it because every facet request it handles is for treatment.
+
 ## Not legal or medical advice
 
 PAIR is a research prototype. Review any letter it drafts before sending it, and contact your State Health Insurance Assistance Program (SHIP) for free help with an appeal.
