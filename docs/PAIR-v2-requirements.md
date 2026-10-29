@@ -270,9 +270,9 @@ Each method below lists what it is in plain words, then how PAIR uses it.
 3. **Conformal threshold** (6.5): keep, flag, or drop.
 
 ### 6.5 Conformal claim filtering
-**Plain words:** choose the cut-off on verifier scores using held-out examples, so that "kept" claims are wrong at most α of the time, with a guarantee that doesn't depend on the model being well calibrated.
-**In PAIR:** split conformal in the style of conformal factuality (Mohri & Hashimoto 2024) on claim-level verifier scores. A calibration set of labeled claims comes from the synthetic cases; 30 cases × ~6 to 10 claims gives a few hundred claims.
-**Pitfall to avoid** ([arXiv 2609.38222](https://arxiv.org/abs/2609.38222)): when filtering empties a response, the guarantee holds trivially. We always report **abstention rate** and **support rate among non-empty outputs**, not just the headline coverage.
+**Plain words:** choose the cut-off on verifier scores using held-out examples, so that, on average over calibration sets, a new unsupported claim gets through the filter at most α of the time (the leak rate), with a guarantee that doesn't depend on the model being well calibrated. This bounds how many bad claims get through; it does not promise that a share of kept claims is supported, which is reported separately as a description. Decided in [ADR-0020](decisions/0020-claim-labels-and-conformal-split.md), which supersedes the earlier "kept claims are wrong at most α" wording and sets the exit rule.
+**In PAIR:** split conformal in the style of conformal factuality (Mohri & Hashimoto 2024) on claim-level verifier scores. A calibration set of labeled claims comes from the synthetic cases. Expected counts are in [ADR-0020](decisions/0020-claim-labels-and-conformal-split.md) (about 100 to 270 claims per side from the Phase 2 verdicts, with very few unsupported ones), and [ADR-0021](decisions/0021-pilot-sized-patient-pools.md) sizes extra patient pools from a dev-only pilot.
+**Pitfall to avoid** ([arXiv 2609.38222](https://arxiv.org/abs/2609.38222)): when filtering empties a response, the guarantee holds trivially. We always report **empty-letter rate** and **support rate among non-empty outputs**, not just the headline coverage.
 
 ### 6.6 Strength score with calibrated uncertainty
 **Plain words:** a number for "how likely is this appeal to win", honest about its range, which abstains when unsure.
@@ -341,7 +341,7 @@ All three remain options for Phase 2+ if policy count grows.
 | Evidence extraction + rules | Per-criterion macro-F1 (met / unmet / insufficient) | ≥0.85 | Gold labels from planting |
 | Grounding | % extractions with valid char interval | ≥95% | Same |
 | Letter citations | **Claim funnel**: coverage → verbatim → lenient support → strict support (CCR) | CCR ≥80% after verifier | Claims from all cases; adversarial critic (ADR-0013) + human audit |
-| Conformal filter | Empirical vs target error (α = 0.1); abstention rate; support among non-empty | Within ±3 pts of target; report all three | Calibration/test split of claims |
+| Conformal filter | Leak rate vs α = 0.1; empty-letter rate; support among non-empty; precision of kept claims | Pass only if n ≥ 30 unsupported test claims, leak point ≤ 0.15 and cluster-bootstrap upper ≤ 0.30, else "inconclusive" (ADR-0020, ADR-0021) | Calibration/test split of claims by patient |
 | Strength score | AUROC, Brier, reliability diagram, interval coverage | Coverage within ±3 pts of nominal | IMR test years (2024+) |
 | System | End-to-end latency on M2 | <60 s per case | Demo cases |
 | Human | 50-claim audit: supported / partly / unsupported | Agreement with the critic ≥85%, plus Cohen's kappa (ADR-0013) | Random sample, audited by Nithin |

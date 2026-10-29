@@ -1,0 +1,21 @@
+# Odds multipliers per active criterion outcome (ADR-0007, ADR-0019). These are ASSUMPTIONS, not
+# fitted values: IMR has no per-criterion outcomes to learn them from. Phase 3 reports how the score
+# moves under them; a sensitivity check is listed in the tracker. The shown range moves with p by the
+# same shift, and the width rule below always uses the unshifted base range.
+max_width: 0.20  # abstain when the base range is wider than 20 points (ADR-0019 rule 1)
+shifts:
+  met:
+    value: 1.25
+    rationale: >-
+      The record shows the criterion is met, so a reviewer applying the coverage rule has one less
+      reason to uphold the denial. Kept small because IMR base rates already include many met cases.
+  insufficient:
+    value: 0.8
+    rationale: >-
+      The record doesn't show the criterion either way. Reviewers often uphold when documentation is
+      missing, but the patient can still add records, so the penalty is moderate.
+  unmet:
+    value: 0.35
+    rationale: >-
+      The record contradicts the criterion. Under the coverage rule this is a strong reason to uphold,
+      so the shift is large; it is still not zero because reviewers sometimes find exceptions.

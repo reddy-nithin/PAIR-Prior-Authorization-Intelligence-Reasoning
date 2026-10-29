@@ -1,6 +1,6 @@
 # ADR-0013: Adversarial critic for audits, with source-backed verdicts
 
-**Status:** Accepted
+**Status:** Accepted. Amended by [ADR-0020](0020-claim-labels-and-conformal-split.md): the critic may run on Gemini Flash once it passes the seeded gate, which reverses Alternative 3 below.
 **Date:** 2026-10-22
 **Supersedes:** (none; changes how spec §8.1 audits are done)
 

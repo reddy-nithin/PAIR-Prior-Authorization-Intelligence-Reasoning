@@ -1,4 +1,4 @@
-"""Command line: ``pair run <case>``, ``pair eval-core`` (Phase 2 exit check) and ``pair audit precheck``."""
+"""Command line: ``pair run <case>``, ``pair eval-core`` (Phase 2 exit check), ``pair audit precheck`` and the Phase 3 commands (``trust_cli``)."""
 
 import argparse
 import dataclasses
@@ -15,6 +15,7 @@ import langextract as lx
 
 from pair.audit_cli import add_audit_parser, run_audit
 from pair.contracts import CriterionStatus
+from pair.draft.template import load_letter_template
 from pair.eval.cases import CaseBundle, CaseLoadError, load_case
 from pair.eval.metrics import (
     CaseScore,
@@ -33,7 +34,27 @@ from pair.llm import (
     LLMError,
     make_client,
 )
-from pair.pipeline import CoreRun, Resources, load_resources, run_core
+from pair.pipeline import (
+    CoreRun,
+    Resources,
+    TrustRun,
+    load_resources,
+    run_core,
+    run_trust,
+)
+from pair.score.base_model import BaseModelError, load_base_model
+from pair.score.strength import IMR_NOTE, load_adjustments, load_ship_links
+from pair.trust_cli import (
+    IMR_MODEL,
+    TEMPLATE,
+    THRESHOLDS,
+    TRUST_COMMANDS,
+    add_trust_parsers,
+    case_flags,
+    run_trust_command,
+)
+from pair.verify.conformal import ThresholdBook
+from pair.verify.nli import Verifier, VerifierConfig, VerifierConfigError, make_verifier
 
 logger = logging.getLogger("pair")
 
@@ -63,11 +84,15 @@ def _parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run", help="parse a case's denial, select the policy, extract evidence, print the verdict")
     run.add_argument("case", type=Path, help="case bundle JSON (only its denial text and notes are used)")
     run.add_argument("--context", type=_context_flag, action="append", default=[], help="flag=true|false|none")
+    run.add_argument("--trust", action="store_true", help="also draft, verify and score the letter (steps 5 to 7)")
+    run.add_argument("--imr-model", type=Path, default=IMR_MODEL)
+    run.add_argument("--thresholds", type=Path, default=THRESHOLDS)
     ev = sub.add_parser("eval-core", help="score steps 1 to 4 on every case and update RESULTS.md")
     ev.add_argument("--cases", type=Path, default=CASES_DIR)
     ev.add_argument("--results", type=Path, default=RESULTS_PATH)
     ev.add_argument("--runs", type=Path, default=RUNS_DIR)
     add_audit_parser(sub)
+    add_trust_parsers(sub, RUNS_DIR, RESULTS_PATH)
     return parser
 
 
@@ -75,8 +100,9 @@ def main(
     argv: Sequence[str] | None = None,
     client: LLMClient | None = None,
     extract_fn: ExtractFn | None = None,
+    verifier: Verifier | None = None,
 ) -> int:
-    """Entry point. ``client``/``extract_fn`` are injectable for tests. Returns an exit code."""
+    """Entry point. ``client``/``extract_fn``/``verifier`` are injectable for tests. Returns an exit code."""
     args = _parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING, format="%(levelname)s %(message)s")
     if args.command == "audit":
@@ -90,13 +116,28 @@ def main(
     resources = load_resources(args.policies)
     llm = client or make_client(config)
     extractor = extract_fn or lx.extract
+    if verifier is None and (args.command == "draft-claims" or getattr(args, "trust", False)):
+        try:
+            verifier = make_verifier(VerifierConfig.from_env())
+        except VerifierConfigError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return EXIT_ERROR
+    if args.command in TRUST_COMMANDS:
+        return run_trust_command(args, resources, llm, config, extractor, verifier)
     if args.command == "run":
-        return _run(args, resources, llm, config, extractor)
+        return _run(args, resources, llm, config, extractor, verifier)
     return _eval_core(args, resources, llm, config, extractor)
 
 
-def _run(args: argparse.Namespace, resources: Resources, client: LLMClient, config: LLMConfig, extract_fn: ExtractFn) -> int:
-    """``pair run``: steps 1 to 4 on one case, printed for a person."""
+def _run(
+    args: argparse.Namespace,
+    resources: Resources,
+    client: LLMClient,
+    config: LLMConfig,
+    extract_fn: ExtractFn,
+    verifier: Verifier | None = None,
+) -> int:
+    """``pair run``: steps 1 to 4 on one case (and 5 to 7 with ``--trust``), printed for a person."""
     try:
         case = load_case(args.case)
     except CaseLoadError as error:
@@ -112,7 +153,70 @@ def _run(args: argparse.Namespace, resources: Resources, client: LLMClient, conf
         print(f"error: {run.denial_error}", file=sys.stderr)
         return EXIT_PARSE
     print(_render(case, run, context, config))
+    if args.trust and run.verdict is not None:
+        assert verifier is not None
+        try:
+            print(_trust_section(args, case, run, resources, client, config, verifier))
+        except LLMError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return EXIT_ERROR
     return EXIT_OK if run.verdict is not None else EXIT_UNSUPPORTED
+
+
+def _trust_section(
+    args: argparse.Namespace,
+    case: CaseBundle,
+    run: CoreRun,
+    resources: Resources,
+    client: LLMClient,
+    config: LLMConfig,
+    verifier: Verifier,
+) -> str:
+    """Steps 5 to 7 for ``pair run --trust``: the letter, what was kept out of it, and the strength."""
+    assert run.verdict is not None
+    checklist = resources.checklists[run.verdict.policy_id]
+    info = verifier.describe()
+    threshold = ThresholdBook.load(args.thresholds).lookup(config.model, info["verifier_backend"], info["verifier_model"])
+    note = None
+    base = None
+    try:
+        base = load_base_model(args.imr_model).estimate(checklist.id)
+    except (BaseModelError, KeyError) as error:
+        note = str(error)
+    trust = run_trust(
+        run, case.record_text(), checklist, client, verifier, threshold, config.model,
+        load_letter_template(TEMPLATE), case_flags(case, dict(args.context)), base,
+        load_adjustments(Path(__file__).parent / "score" / "adjustments.yaml"),
+    )  # fmt: skip
+    return _render_trust(trust, note, args.policies)
+
+
+def _render_trust(trust: TrustRun, note: str | None, policies: Path) -> str:
+    """The letter, the claims kept out of it, and the strength or "get a human"."""
+    meta = trust.verified.metadata
+    lines = ["", (f"Letter (drafter {meta['drafter']}, verifier {meta['verifier_backend']} {meta['verifier_model']}, "
+             f"threshold {meta['threshold']})"), "", trust.rendered.text, ""]
+    if trust.rendered.unconfirmed:
+        lines.append("Statements PAIR couldn't confirm (removed from the letter; check them against your records):")
+        lines += [f"  ⚑ {claim.text}" for claim in trust.rendered.unconfirmed]
+    if trust.rendered.not_evaluated:
+        lines.append(f"{len(trust.rendered.not_evaluated)} statement(s) in the letter are not evaluated: no "
+                     "calibrated threshold exists for this drafter and verifier.")
+    lines += [f"Not argued: {s.criterion_id} ({s.status.value}): {s.message}" for s in trust.plan.skipped]
+    strength = trust.strength
+    if strength is None:
+        lines.append(f"Strength: not available ({note})")
+    elif strength.abstain:
+        lines.append(f"Get a human: {strength.abstain_reason}")
+        lines += [f"  {link.name}: {link.url}" for link in load_ship_links(policies / "_ship.yaml")]
+    else:
+        lines.append(f"Strength: {strength.p:.0%} (range {strength.interval.low:.0%} to {strength.interval.high:.0%}), "
+                     f"from a base rate of {strength.explanation.base_rate:.0%} over "
+                     f"{strength.explanation.n_similar} similar reviews")
+        lines += [f"  {s.criterion_id}: {s.status.value} (odds x{s.shift})" for s in strength.explanation.steps]
+        lines += [f"  What helps: {i.action} (to about {i.p_if_fixed:.0%})" for i in strength.explanation.improve]
+    lines.append(IMR_NOTE)
+    return "\n".join(lines)
 
 
 def _render(case: CaseBundle, run: CoreRun, context: dict[str, bool | None], config: LLMConfig) -> str:

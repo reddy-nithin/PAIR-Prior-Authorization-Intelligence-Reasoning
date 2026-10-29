@@ -1,0 +1,8 @@
+# Where to send a patient when PAIR says "get a human" (ADR-0019). Free, unbiased Medicare counseling.
+links:
+  - name: State Health Insurance Assistance Program (SHIP) locator
+    url: https://www.shiphelp.org
+    note: Free one-on-one Medicare counseling in every state, including help with appeals.
+  - name: Medicare.gov appeals overview
+    url: https://www.medicare.gov/providers-services/claims-appeals-complaints/appeals
+    note: How Medicare Advantage appeals work and the deadlines for each level.

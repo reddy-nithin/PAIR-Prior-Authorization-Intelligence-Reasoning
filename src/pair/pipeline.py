@@ -1,24 +1,35 @@
-"""The core pipeline, steps 1 to 4: parse the denial, select the checklist, extract evidence, run rules.
+"""The pipeline: steps 1 to 4 (``run_core``) and steps 5 to 7 (``run_trust``).
 
-The LLM reads (steps 1 and 3). Policy selection and the verdict are deterministic.
+The LLM reads (steps 1 and 3) and words claim sentences (step 5). Policy
+selection, the verdict, what the letter may claim, the verifier decision and the
+strength score are deterministic or calibrated, never chosen by the LLM.
 """
 
 import logging
 import time
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 import langextract as lx
 
-from pair.contracts import Checklist, Evidence, Verdict
+from pair.contracts import Checklist, Evidence, Strength, Verdict
+from pair.draft.claims import ClaimPlan, plan_claims
+from pair.draft.letter import WordingResult, word_claims
+from pair.draft.template import LetterTemplate, RenderedLetter, render_letter
 from pair.extract.runner import ExtractFn, ExtractionResult, extract_evidence
 from pair.ingest.denial import DenialParseError, ParsedDenial, parse_denial
 from pair.llm import LLMClient, LLMConfig
 from pair.policies.loader import load_all
 from pair.policies.select import Selection, load_service_codes, select_policy
+from pair.rules.active import ContextFlag
 from pair.rules.engine import run_rules
 from pair.rules.gaps import GapBook, load_gaps
+from pair.score.base_model import BaseEstimate
+from pair.score.strength import Adjustments, compute_strength
+from pair.verify.conformal import Threshold
+from pair.verify.nli import Verifier
+from pair.verify.pipeline import VerifiedLetter, verify_letter
 
 logger = logging.getLogger(__name__)
 
@@ -136,3 +147,54 @@ def run_core(
     evidence = [item for result in extractions.values() for item in result.evidence]
     verdict = run_rules(checklist, evidence, dict(context or {}), resources.gaps.for_policy(policy_id))
     return CoreRun(parsed, error, selection, extractions, verdict, time.perf_counter() - started)
+
+
+@dataclass(frozen=True)
+class TrustRun:
+    """The result of steps 5 to 7 for one case.
+
+    Attributes:
+        plan: Claim slots and the criteria left out.
+        wording: The worded, unverified letter and wording statistics.
+        verified: Scores, decisions and verifier metadata.
+        rendered: The letter text and the claims kept out of it.
+        strength: The strength estimate, or None when no base rate is available.
+    """
+
+    plan: ClaimPlan
+    wording: WordingResult
+    verified: VerifiedLetter
+    rendered: RenderedLetter
+    strength: Strength | None
+
+
+def run_trust(
+    core: CoreRun,
+    notes: Mapping[str, str],
+    checklist: Checklist,
+    client: LLMClient,
+    verifier: Verifier,
+    threshold: Threshold | None,
+    drafter: str,
+    template: LetterTemplate,
+    flags: Mapping[str, ContextFlag],
+    base: BaseEstimate | None = None,
+    adjustments: Adjustments | None = None,
+    exemplars: Sequence[str] = (),
+) -> TrustRun:
+    """Run steps 5 to 7 on a finished core run.
+
+    Raises:
+        ValueError: If the core run has no verdict or parsed denial, or is for another checklist.
+        LLMError: If the drafter or verifier backend fails.
+    """
+    if core.verdict is None or core.denial is None:
+        raise ValueError("steps 5 to 7 need a parsed denial and a verdict")
+    plan = plan_claims(checklist, core.verdict)
+    wording = word_claims(plan.slots, checklist, client, exemplars)
+    verified = verify_letter(wording.letter, checklist, notes, core.evidence, verifier, threshold, drafter)
+    rendered = render_letter(verified.letter, checklist, core.denial.denial, template)
+    strength = None
+    if base is not None and adjustments is not None:
+        strength = compute_strength(checklist, core.verdict, base, adjustments, flags)
+    return TrustRun(plan, wording, verified, rendered, strength)
