@@ -13,14 +13,14 @@ export default function LetterPage() {
   return (
     <>
       <div className="stack">
-        <p className="eyebrow">{copy.common.steps.letter}</p>
         <h1>{copy.letter.title}</h1>
         <p className="lede">{copy.letter.intro}</p>
-        {letter ? <p className="note">{copy.letter.fillIn}</p> : null}
+        
       </div>
+      {letter ? <p className="fillin">{copy.letter.fillIn}</p> : null}
       <LetterView view={view} />
       {letter?.unconfirmed.length ? (
-        <section className="panel kept-out" aria-labelledby="unconf-h">
+        <section className="card tight" aria-labelledby="unconf-h">
           <h2 id="unconf-h">{copy.letter.unconfirmedTitle}</h2>
           <p>{copy.letter.unconfirmedIntro}</p>
           <ul className="links">
@@ -34,7 +34,7 @@ export default function LetterPage() {
         </section>
       ) : null}
       {letter?.not_argued.length ? (
-        <section className="panel" aria-labelledby="na-h">
+        <section className="card tight" aria-labelledby="na-h">
           <h2 id="na-h">{copy.letter.notArguedTitle}</h2>
           <ul className="links">
             {letter.not_argued.map((n) => (

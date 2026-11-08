@@ -11,7 +11,6 @@ export default function MissingPage() {
   return (
     <>
       <div className="stack">
-        <p className="eyebrow">{copy.common.steps.missing}</p>
         <h1>{copy.missing.title}</h1>
         <p className="lede">{empty ? copy.missing.nothingMissing : copy.missing.intro}</p>
       </div>

@@ -1,21 +1,27 @@
 import type { CaseView } from "@/types/caseview";
+import { FileIcon } from "@/components/Icons";
 import { copy } from "@/lib/copy";
 import { longDate } from "@/lib/format";
 
-/** The denial at a glance, like the reference block on a notice. */
+/** The denial at a glance, as one chip above the page title. */
 export function CaseStrip({ view }: { view: CaseView }) {
   const d = view.denial;
+  if (!d) return null;
+  const parts = [
+    d.service,
+    d.codes.join(", ") || null,
+    `${copy.common.denied.toLowerCase()} ${longDate(d.date)}`,
+    `${copy.common.rule.toLowerCase()} ${d.cited_rule?.label ?? copy.common.notNamed.toLowerCase()}`,
+  ].filter(Boolean);
   return (
-    <div className="strip-ref" aria-label="Your denial">
-      {d ? (
-        <>
-          <span>{copy.common.service} <b>{d.service}</b></span>
-          <span>{copy.common.code} <b className="code">{d.codes.join(", ") || copy.common.notNamed}</b></span>
-          <span>{copy.common.denied} <b>{longDate(d.date)}</b></span>
-          <span>{copy.common.rule} <b className="code">{d.cited_rule?.label ?? copy.common.notNamed}</b></span>
-        </>
-      ) : null}
-      <span className="chip">{view.mode === "live" ? copy.common.liveChip : copy.common.demoChip}</span>
-    </div>
+    <p className="casechip" aria-label="Your denial">
+      <FileIcon />
+      <span>{parts.join(" · ")}</span>
+    </p>
   );
+}
+
+/** The tag in the top bar: demo or live. */
+export function ModeTag({ view }: { view: CaseView }) {
+  return <span className="tag insufficient">{view.mode === "live" ? copy.common.liveChip : copy.common.demoTag}</span>;
 }

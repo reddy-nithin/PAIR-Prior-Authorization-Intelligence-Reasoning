@@ -10,7 +10,7 @@ export default function CaseLayout({ children }: { children: ReactNode }) {
       fallback={
         <>
           <Header />
-          <div className="wrap shell single">
+          <div className="col">
             <main id="main" tabIndex={-1}>
               <p className="lede" role="status">{copy.common.loading}</p>
             </main>

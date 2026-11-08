@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { CaseView } from "@/types/caseview";
 import { cachedFileUrl, DataError, exportLive } from "@/lib/data";
 import { copy } from "@/lib/copy";
+import { DownloadIcon } from "@/components/Icons";
 
 const FORMATS = [
   { fmt: "docx", label: copy.download.docx, hint: copy.download.wordBest, ext: ".docx" },
@@ -30,13 +31,14 @@ export function DownloadButtons({ view }: { view: CaseView }) {
     <>
       <div className="files">
         {FORMATS.map(({ fmt, label, hint, ext }, i) => (
-          <section className="panel file" key={fmt}>
-            <h2>{label.replace(/ \(\.docx\)$/, "")} <span className="ext">{ext}</span></h2>
+          <section className="card tight file" key={fmt}>
+            <span className="ext" aria-hidden="true"><DownloadIcon />{ext}</span>
+            <h2>{label}</h2>
             <p>{hint}</p>
             {live ? (
-              <button type="button" className={`btn${i ? " secondary" : ""}`} onClick={() => save(fmt)}>{label}</button>
+              <button type="button" className={`btn block${i ? " secondary" : ""}`} onClick={() => save(fmt)}>{label}</button>
             ) : (
-              <a className={`btn${i ? " secondary" : ""}`} href={cachedFileUrl(view.case_id, fmt)} download={`appeal-letter-${view.case_id}${ext}`}>{label}</a>
+              <a className={`btn block${i ? " secondary" : ""}`} href={cachedFileUrl(view.case_id, fmt)} download={`appeal-letter-${view.case_id}${ext}`}>{label}</a>
             )}
           </section>
         ))}

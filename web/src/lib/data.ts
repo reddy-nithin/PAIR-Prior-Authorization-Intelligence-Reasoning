@@ -5,6 +5,8 @@ export const API_BASE = process.env.NEXT_PUBLIC_PAIR_API ?? "http://127.0.0.1:80
 /** The hosted copy (Vercel) sets NEXT_PUBLIC_PAIR_API to "" so it never calls a local API. */
 export const LIVE_AVAILABLE = API_BASE !== "";
 export const LIVE_PREFIX = "live-";
+/** Where the code, results and run-it-yourself steps live. */
+export const REPO_URL = "https://github.com/reddy-nithin/PAIR-Prior-Authorization-Intelligence-Reasoning";
 
 export interface CaseRow {
   case_id: string;

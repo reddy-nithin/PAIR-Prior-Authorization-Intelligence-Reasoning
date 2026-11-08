@@ -29,7 +29,10 @@
     "code": "Code",
     "denied": "Denied",
     "rule": "Rule",
-    "notNamed": "Not named"
+    "notNamed": "Not named",
+    "codeLink": "Code on GitHub",
+    "howItWorks": "How PAIR works and how well it does",
+    "demoTag": "Demo case · made-up records, not a real patient"
   },
   "start": {
     "title": "Start your appeal",
@@ -49,7 +52,8 @@
     "promise": "Your files stay in this computer's memory while we read them. Nothing is saved.",
     "needDenial": "Add your denial letter first.",
     "checking": "Checking if the live checker is on.",
-    "hostedOnly": "This online copy has demo cases only. To check your own papers, run PAIR on your own computer. The steps are on GitHub."
+    "hostedOnly": "This online copy has demo cases only. To check your own papers, run PAIR on your own computer. The steps are on GitHub.",
+    "hostedLink": "See how to run it on GitHub"
   },
   "why": {
     "title": "Why they said no",
@@ -57,7 +61,8 @@
     "plainWords": "In plain words",
     "ruleCited": "The rule they used",
     "openRule": "Read the full rule",
-    "notSupported": "We can't check this kind of denial yet."
+    "notSupported": "We can't check this kind of denial yet.",
+    "fromNotice": "From your denial notice, dated {date}."
   },
   "stand": {
     "title": "Where you stand",
@@ -68,7 +73,13 @@
     "howDecided": "How we decided",
     "required": "Required",
     "summary": "{met} met, {unmet} not met, {unknown} not sure",
-    "open": "Open a line to see what your records say."
+    "open": "Open a line to see what your records say.",
+    "counts": {
+      "met": "Met",
+      "unmet": "Not met",
+      "unknown": "Not sure"
+    },
+    "missingBanner": "A required paper is missing. Get it before you send your appeal. Ask: {who}."
   },
   "missing": {
     "title": "What's missing",
@@ -124,6 +135,7 @@
       "Add the papers from the list of what's missing, if you got them.",
       "Send it before the date on your denial letter. Keep a copy."
     ],
-    "failed": "We could not make the file. Try again, or use the other format."
+    "failed": "We could not make the file. Try again, or use the other format.",
+    "beforeTitle": "Before you send it"
   }
 }

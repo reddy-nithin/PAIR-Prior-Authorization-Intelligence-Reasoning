@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useParams, useSelectedLayoutSegment } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { CaseView } from "@/types/caseview";
-import { Header } from "@/app/Header";
-import { CaseStrip } from "@/components/CaseStrip";
+import { Footer, Header } from "@/app/Header";
+import { CaseStrip, ModeTag } from "@/components/CaseStrip";
 import { Stepper } from "@/components/Stepper";
 import { CaseContext } from "@/lib/case-context";
 import { DataError, LIVE_PREFIX, loadCachedView } from "@/lib/data";
@@ -50,7 +50,7 @@ export function CaseShell({ children }: { children: ReactNode }) {
     return (
       <>
         <Header />
-        <div className="wrap shell single">
+        <div className="col">
           <main id="main" tabIndex={-1}>
             {problem ? (
               <>
@@ -69,10 +69,14 @@ export function CaseShell({ children }: { children: ReactNode }) {
 
   return (
     <CaseContext.Provider value={view}>
-      <Header><CaseStrip view={view} /></Header>
-      <div className="wrap shell">
-        <Stepper caseId={caseId} current={current} />
-        <main id="main" tabIndex={-1}>{children}</main>
+      <Header><ModeTag view={view} /></Header>
+      <Stepper caseId={caseId} current={current} />
+      <div className={`col on-case${current === "letter" ? " wide" : ""}`}>
+        <main id="main" tabIndex={-1}>
+          <CaseStrip view={view} />
+          {children}
+          <Footer />
+        </main>
       </div>
     </CaseContext.Provider>
   );
