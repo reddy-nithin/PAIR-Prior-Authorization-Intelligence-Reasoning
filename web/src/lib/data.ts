@@ -2,6 +2,8 @@ import type { CaseView } from "@/types/caseview";
 
 /** The local demo API (`make api`). Live runs and live exports go here; cached mode never needs it. */
 export const API_BASE = process.env.NEXT_PUBLIC_PAIR_API ?? "http://127.0.0.1:8000";
+/** The hosted copy (Vercel) sets NEXT_PUBLIC_PAIR_API to "" so it never calls a local API. */
+export const LIVE_AVAILABLE = API_BASE !== "";
 export const LIVE_PREFIX = "live-";
 
 export interface CaseRow {
@@ -54,6 +56,7 @@ export function cachedFileUrl(caseId: string, fmt: "docx" | "pdf"): string {
 
 /** The API's health, or null if it isn't running. */
 export async function apiHealth(timeoutMs = 2500): Promise<Health | null> {
+  if (!LIVE_AVAILABLE) return null;
   try {
     const response = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(timeoutMs) });
     return response.ok ? ((await response.json()) as Health) : null;

@@ -48,7 +48,8 @@
     "demoNote": "Demo cases are made up. They use no real person's records.",
     "promise": "Your files stay in this computer's memory while we read them. Nothing is saved.",
     "needDenial": "Add your denial letter first.",
-    "checking": "Checking if the live checker is on."
+    "checking": "Checking if the live checker is on.",
+    "hostedOnly": "This online copy has demo cases only. To check your own papers, run PAIR on your own computer. The steps are on GitHub."
   },
   "why": {
     "title": "Why they said no",
