@@ -1,4 +1,8 @@
-"""``Claim`` and ``Letter``: the drafted appeal, one cited claim per criterion (steps 5 and 6)."""
+"""``Claim`` and ``Letter``: the drafted appeal, one cited claim per record fact (steps 5 and 6).
+
+A met criterion backed by several facts gets several claims, each with one policy
+quote and one record quote (ADR-0018). The schema is unchanged.
+"""
 
 from enum import StrEnum
 from typing import Self
@@ -14,6 +18,7 @@ class ClaimDecision(StrEnum):
     KEEP = "keep"
     FLAG = "flag"
     DROP = "drop"
+    QUOTE = "quote"  # a flagged paraphrase of a met criterion, replaced by the record sentence verbatim (ADR-0024)
 
 
 class PolicyCitation(ContractModel):

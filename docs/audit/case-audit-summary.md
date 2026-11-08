@@ -70,6 +70,7 @@ These change no gold status, but they affect metrics or letters:
 - **Blind labeling was not enforced by file separation.** Each case is one JSON file, so most critics saw the gold fields in the same read as the notes. Every critic said it formed its labels from the notes and denial first, and the seeded-fault gate (2026-10-22) ran under the same conditions. A stricter design would hand the critic a notes-only copy first.
 - **Critics grade the same defect differently.** test home-oxygen-07 has the B1 structure but its critic graded it major. Outcomes above are assigned per root cause, not per critic grade.
 - **Source access.** Contractor pages were not fetched. Verdicts rest on LCD and NCD text from the MCD export.
+- **Same-family critic on the v3 re-audit.** The v3 re-audit below ran on Gemini Flash, and the cases it judged were written by Gemini. ADR-0013 rejected a Gemini judge for exactly this reason; [ADR-0020](../decisions/0020-claim-labels-and-conformal-split.md) now allows it behind the seeded gate. The gate bounds the critic's errors only for the planted fault types, so errors Flash shares with the Gemini generator may go unflagged. Treat the v3 "all pass" result with that limit.
 
 ## Effect on the Phase 2 rescore
 

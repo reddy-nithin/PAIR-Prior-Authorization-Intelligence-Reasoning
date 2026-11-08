@@ -1,0 +1,863 @@
+{
+  "$defs": {
+    "CriterionStatus": {
+      "description": "Outcome of one criterion.\n\n``met``: evidence satisfies the rule. ``unmet``: evidence contradicts it.\n``insufficient``: no usable evidence, or only negated, vague or conflicting\nevidence.",
+      "enum": [
+        "met",
+        "unmet",
+        "insufficient"
+      ],
+      "title": "CriterionStatus",
+      "type": "string"
+    },
+    "CriterionView": {
+      "additionalProperties": false,
+      "description": "Screen 3: one row of \"where you stand\".",
+      "properties": {
+        "critical": {
+          "title": "Critical",
+          "type": "boolean"
+        },
+        "heading": {
+          "minLength": 1,
+          "title": "Heading",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/$defs/PolicyClause"
+        },
+        "quotes": {
+          "items": {
+            "$ref": "#/$defs/SourceSpan"
+          },
+          "title": "Quotes",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/StatusView"
+        },
+        "trace": {
+          "minLength": 1,
+          "title": "Trace",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "heading",
+        "status",
+        "critical",
+        "quotes",
+        "policy",
+        "trace"
+      ],
+      "title": "CriterionView",
+      "type": "object"
+    },
+    "Decision": {
+      "description": "What the verifier decided about a sentence, in display terms.",
+      "enum": [
+        "kept",
+        "flagged",
+        "not_evaluated",
+        "dropped",
+        "quoted"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "DenialView": {
+      "additionalProperties": false,
+      "description": "Screen 2: why they said no.",
+      "properties": {
+        "cited_rule": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PolicyRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Codes",
+          "type": "array"
+        },
+        "date": {
+          "minLength": 1,
+          "title": "Date",
+          "type": "string"
+        },
+        "policy_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Policy Ref"
+        },
+        "reason_plain": {
+          "minLength": 1,
+          "title": "Reason Plain",
+          "type": "string"
+        },
+        "reason_text": {
+          "minLength": 1,
+          "title": "Reason Text",
+          "type": "string"
+        },
+        "service": {
+          "minLength": 1,
+          "title": "Service",
+          "type": "string"
+        }
+      },
+      "required": [
+        "service",
+        "codes",
+        "date",
+        "reason_text",
+        "reason_plain",
+        "policy_ref",
+        "cited_rule"
+      ],
+      "title": "DenialView",
+      "type": "object"
+    },
+    "DocumentView": {
+      "additionalProperties": false,
+      "description": "A record the source panel can show and highlight.",
+      "properties": {
+        "doc_id": {
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doc_id",
+        "title",
+        "text"
+      ],
+      "title": "DocumentView",
+      "type": "object"
+    },
+    "GapGroup": {
+      "additionalProperties": false,
+      "description": "Screen 4: the gaps one person or office can fix.",
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/GapItem"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "who": {
+          "minLength": 1,
+          "title": "Who",
+          "type": "string"
+        }
+      },
+      "required": [
+        "who",
+        "items"
+      ],
+      "title": "GapGroup",
+      "type": "object"
+    },
+    "GapItem": {
+      "additionalProperties": false,
+      "description": "One thing to ask for.",
+      "properties": {
+        "criterion_id": {
+          "minLength": 1,
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "heading": {
+          "minLength": 1,
+          "title": "Heading",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/StatusView"
+        }
+      },
+      "required": [
+        "criterion_id",
+        "heading",
+        "status",
+        "message"
+      ],
+      "title": "GapItem",
+      "type": "object"
+    },
+    "ImproveView": {
+      "additionalProperties": false,
+      "description": "What helps, with the estimate if fixed (None when abstaining).",
+      "properties": {
+        "action": {
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "criterion_id": {
+          "minLength": 1,
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "heading": {
+          "minLength": 1,
+          "title": "Heading",
+          "type": "string"
+        },
+        "p_if_fixed": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "P If Fixed"
+        }
+      },
+      "required": [
+        "criterion_id",
+        "heading",
+        "action",
+        "p_if_fixed"
+      ],
+      "title": "ImproveView",
+      "type": "object"
+    },
+    "LetterView": {
+      "additionalProperties": false,
+      "description": "Screen 5: the letter, its clickable sentences, and what was kept out.",
+      "properties": {
+        "dropped": {
+          "minimum": 0,
+          "title": "Dropped",
+          "type": "integer"
+        },
+        "not_argued": {
+          "items": {
+            "$ref": "#/$defs/NotArgued"
+          },
+          "title": "Not Argued",
+          "type": "array"
+        },
+        "sentences": {
+          "items": {
+            "$ref": "#/$defs/SentenceView"
+          },
+          "title": "Sentences",
+          "type": "array"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "unconfirmed": {
+          "items": {
+            "$ref": "#/$defs/SentenceView"
+          },
+          "title": "Unconfirmed",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text",
+        "sentences",
+        "unconfirmed",
+        "dropped",
+        "not_argued"
+      ],
+      "title": "LetterView",
+      "type": "object"
+    },
+    "LinkView": {
+      "additionalProperties": false,
+      "description": "A place to get free help.",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "url": {
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "url",
+        "note"
+      ],
+      "title": "LinkView",
+      "type": "object"
+    },
+    "NotArgued": {
+      "additionalProperties": false,
+      "description": "A criterion the letter leaves out, and what would let it be argued.",
+      "properties": {
+        "criterion_id": {
+          "minLength": 1,
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "heading": {
+          "minLength": 1,
+          "title": "Heading",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/StatusView"
+        }
+      },
+      "required": [
+        "criterion_id",
+        "heading",
+        "status",
+        "message"
+      ],
+      "title": "NotArgued",
+      "type": "object"
+    },
+    "PolicyClause": {
+      "additionalProperties": false,
+      "description": "A verbatim clause and the document it is from.",
+      "properties": {
+        "clause": {
+          "minLength": 1,
+          "title": "Clause",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/PolicyRef"
+        }
+      },
+      "required": [
+        "source",
+        "clause"
+      ],
+      "title": "PolicyClause",
+      "type": "object"
+    },
+    "PolicyRef": {
+      "additionalProperties": false,
+      "description": "One coverage document, e.g. ``LCD L33718``, with its MCD link.",
+      "properties": {
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "title",
+        "url"
+      ],
+      "title": "PolicyRef",
+      "type": "object"
+    },
+    "SentenceView": {
+      "additionalProperties": false,
+      "description": "One letter sentence with its sources; offsets into the letter when it is shown there.",
+      "properties": {
+        "criterion_id": {
+          "minLength": 1,
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "decision_label": {
+          "minLength": 1,
+          "title": "Decision Label",
+          "type": "string"
+        },
+        "letter_end": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Letter End"
+        },
+        "letter_start": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Letter Start"
+        },
+        "policy": {
+          "$ref": "#/$defs/PolicyClause"
+        },
+        "record": {
+          "$ref": "#/$defs/SourceSpan"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "criterion_id",
+        "text",
+        "decision",
+        "decision_label",
+        "score",
+        "letter_start",
+        "letter_end",
+        "record",
+        "policy"
+      ],
+      "title": "SentenceView",
+      "type": "object"
+    },
+    "SourceSpan": {
+      "additionalProperties": false,
+      "description": "Exact characters in one record.",
+      "properties": {
+        "char_end": {
+          "minimum": 0,
+          "title": "Char End",
+          "type": "integer"
+        },
+        "char_start": {
+          "minimum": 0,
+          "title": "Char Start",
+          "type": "integer"
+        },
+        "doc_id": {
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "quote": {
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doc_id",
+        "char_start",
+        "char_end",
+        "quote"
+      ],
+      "title": "SourceSpan",
+      "type": "object"
+    },
+    "StatusView": {
+      "additionalProperties": false,
+      "description": "A criterion status as icon name + words (color is never the only signal).",
+      "properties": {
+        "icon": {
+          "minLength": 1,
+          "title": "Icon",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/CriterionStatus"
+        }
+      },
+      "required": [
+        "status",
+        "icon",
+        "label"
+      ],
+      "title": "StatusView",
+      "type": "object"
+    },
+    "StepView": {
+      "additionalProperties": false,
+      "description": "One criterion's effect on the estimate.",
+      "properties": {
+        "criterion_id": {
+          "minLength": 1,
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "effect": {
+          "enum": [
+            "raises",
+            "lowers",
+            "no change"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "heading": {
+          "minLength": 1,
+          "title": "Heading",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/StatusView"
+        }
+      },
+      "required": [
+        "criterion_id",
+        "heading",
+        "status",
+        "effect"
+      ],
+      "title": "StepView",
+      "type": "object"
+    },
+    "StrengthView": {
+      "additionalProperties": false,
+      "description": "Screen 6: the range and breakdown, or \"get a human\" with no numbers.",
+      "properties": {
+        "abstain": {
+          "title": "Abstain",
+          "type": "boolean"
+        },
+        "base_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Base Rate"
+        },
+        "data_note": {
+          "minLength": 1,
+          "title": "Data Note",
+          "type": "string"
+        },
+        "high": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "High"
+        },
+        "improve": {
+          "items": {
+            "$ref": "#/$defs/ImproveView"
+          },
+          "title": "Improve",
+          "type": "array"
+        },
+        "low": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Low"
+        },
+        "n_similar": {
+          "minimum": 0,
+          "title": "N Similar",
+          "type": "integer"
+        },
+        "p": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "P"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reason"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/StepView"
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "abstain",
+        "reason",
+        "p",
+        "low",
+        "high",
+        "base_rate",
+        "n_similar",
+        "steps",
+        "improve",
+        "data_note"
+      ],
+      "title": "StrengthView",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Everything the 7 screens show for one case.",
+  "properties": {
+    "case_id": {
+      "minLength": 1,
+      "title": "Case Id",
+      "type": "string"
+    },
+    "criteria": {
+      "items": {
+        "$ref": "#/$defs/CriterionView"
+      },
+      "title": "Criteria",
+      "type": "array"
+    },
+    "denial": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DenialView"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/DocumentView"
+      },
+      "title": "Documents",
+      "type": "array"
+    },
+    "gap_groups": {
+      "items": {
+        "$ref": "#/$defs/GapGroup"
+      },
+      "title": "Gap Groups",
+      "type": "array"
+    },
+    "help_links": {
+      "items": {
+        "$ref": "#/$defs/LinkView"
+      },
+      "title": "Help Links",
+      "type": "array"
+    },
+    "letter": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LetterView"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mode": {
+      "enum": [
+        "cached",
+        "live"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "overall": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StatusView"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Policy Id"
+    },
+    "policy_title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Policy Title"
+    },
+    "run": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Run",
+      "type": "object"
+    },
+    "safety_notice": {
+      "minLength": 1,
+      "title": "Safety Notice",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "strength": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StrengthView"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "supported": {
+      "title": "Supported",
+      "type": "boolean"
+    },
+    "unsupported_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Unsupported Reason"
+    }
+  },
+  "required": [
+    "case_id",
+    "mode",
+    "supported",
+    "unsupported_reason",
+    "policy_id",
+    "policy_title",
+    "denial",
+    "overall",
+    "criteria",
+    "gap_groups",
+    "letter",
+    "strength",
+    "documents",
+    "help_links",
+    "safety_notice",
+    "run"
+  ],
+  "title": "CaseView",
+  "type": "object"
+}

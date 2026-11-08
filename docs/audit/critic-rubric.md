@@ -61,9 +61,9 @@ Policy verdicts must cite the LCD (quote plus MCD URL and version), plus a contr
 
 | ID | Check | Fail when | Severity |
 |---|---|---|---|
-| S1 | A letter claim is fully supported by its cited policy quote and record quote | Any part of the claim goes beyond the quotes | blocker |
+| S1 | A letter claim is fully supported by its premise: the record quote completed to its own sentence (capped at 300 characters each side), plus the previous sentence when that sentence opens with This, That, These, Those, It, They or Such; exactly the text the verifier scores (ADR-0018, ADR-0022) | Any part of the claim goes beyond the premise | blocker |
 
-S1 labels feed conformal calibration as supported or unsupported. Partly supported counts as unsupported.
+The policy quote is not part of the premise; code checks it (span check and criterion link). Verdicts are `supported`, `partly` or `unsupported`, each with a quote from the premise. S1 labels feed conformal calibration as supported or unsupported. Partly supported counts as unsupported (ADR-0020).
 
 ## What the critic never does
 

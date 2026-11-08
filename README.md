@@ -46,6 +46,10 @@ The policy text doesn't settle these points, so PAIR picks a reading. Each one i
 - **PAP re-evaluation window:** L33718 says "no sooner than the 31st day but no later than the 91st day" without saying how to count. PAIR counts the start date as day 1, so the visit must be at least 30 days after the start.
 - **Facet baseline disability scale and sustained relief:** PAIR requires a baseline disability scale and block relief that lasted as long as the agent should. Both follow the LCD's wording, but notes rarely state them, so many facet records come out insufficient. The two Step 7 critics read the baseline disability requirement differently; PAIR applies it because every facet request it handles is for treatment.
 
+### Strength score
+
+The appeal strength starts from California independent medical review (IMR) outcomes for commercial health plans, then moves by assumed odds shifts per requirement (`src/pair/score/adjustments.yaml`). Its coverage numbers are measured on IMR outcomes and are not a guarantee for Medicare Advantage appeals. When a policy has too few similar past reviews, a required record is missing, or neither blood-gas group is shown for home oxygen, PAIR says "get a human" and links to SHIP instead of giving a number (ADR-0019). The model and training window were chosen on 2023 data and reuse those 2023 rows for calibration; with 6 candidates and 2,246 rows the effect is small.
+
 ## Not legal or medical advice
 
 PAIR is a research prototype. Review any letter it drafts before sending it, and contact your State Health Insurance Assistance Program (SHIP) for free help with an appeal.
@@ -56,6 +60,6 @@ PAIR's code is MIT licensed (see `LICENSE`). Third-party data and models carry t
 
 - MCD exports: LCD text can reference CPT codes, which are AMA copyright. PAIR quotes coverage text only and doesn't redistribute CPT descriptors.
 - IMR data: used for noncommercial research and never redistributed. [TODO: quote the CHHS portal terms]
-- [TODO: MiniCheck CC BY-NC, when the verifier is added]
+- Bespoke-MiniCheck-7B (the claim verifier, ADR-0018): licensed CC BY-NC 4.0, so PAIR's verifier setup is for research and demos only, not commercial use. PAIR calls it through Ollama and doesn't redistribute the weights.
 
 Thanks to [Fight Health Insurance](https://github.com/fighthealthinsurance/fighthealthinsurance) (Apache 2.0), whose open IMR work showed this dataset's value for appeals. PAIR's loaders are written separately.

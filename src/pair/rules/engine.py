@@ -163,7 +163,7 @@ def _bind(var_type: VariableType, items: list[Evidence]) -> Binding:
             notes.append(f"{item.status.value}, not used: {source}")
         elif item.value is None:
             notes.append(f"mention without a value: {source}")
-        elif not _fits(var_type, item.value):
+        elif not value_fits(var_type, item.value):
             notes.append(f"ignored ({type(item.value).__name__} is not {var_type.value}): {source}")
         else:
             notes.append(f"from {source}")
@@ -189,7 +189,7 @@ def _merge_items(values: list[Any]) -> list[str] | None:
     return merged or None
 
 
-def _fits(var_type: VariableType, value: Any) -> bool:
+def value_fits(var_type: VariableType, value: Any) -> bool:
     """Whether a normalized value has the type its variable declares."""
     if var_type is VariableType.NUMBER:
         return isinstance(value, (int, float)) and not isinstance(value, bool)

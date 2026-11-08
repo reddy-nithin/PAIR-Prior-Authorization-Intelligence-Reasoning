@@ -1,0 +1,32 @@
+# Plain-language heading per criterion for the demo screens (Phase 4 T3, loaded by src/pair/ui/copy.py).
+# Patient-facing: grade 8, second person, no dashes, no internal tags. The UI says "doctor" where the
+# rule says "treating practitioner" (a doctor, nurse practitioner or physician assistant).
+# Not criterion.text: that is the drafter's prompt input, and editing it would void the fitted threshold.
+headings:
+  pap-osa/f2f_visit: A visit in person with your doctor before your sleep test
+  pap-osa/ahi_threshold: A sleep test score (AHI or RDI) of 15 or more, or 5 to 15 with certain symptoms
+  pap-osa/adherence: >-
+    You used your PAP machine at least 4 hours a night on 70% of nights for 30 days in a row,
+    in the first 3 months
+  pap-osa/reevaluation: A checkup at least 31 days after you started PAP that shows it is helping you
+  home-oxygen/ordered_and_evaluated: >-
+    Your doctor ordered your oxygen test and looked at the results, and the test was done when you
+    needed oxygen
+  home-oxygen/qualified_tester: Your oxygen test was done by your doctor or a lab, not by the oxygen supplier
+  home-oxygen/group1_blood_gas: "Group I: your oxygen level at rest on room air was PO2 55 or less, or 88% or less"
+  home-oxygen/group2_blood_gas: >-
+    Group II: your oxygen level was PO2 56 to 59 or 89%. You also have swelling from heart failure,
+    high blood pressure in the lungs, or a high red blood cell count
+  home-oxygen/home_benefit: Your doctor thinks oxygen at home will help you
+  facet-joint/pain_and_function: >-
+    Neck or low back pain that is at least moderate and gets in the way of your day. It is rated on
+    a pain or function scale, with a first score on record
+  facet-joint/duration_and_conservative_care: >-
+    Pain for at least 3 months that did not get better with care like physical therapy or medicine
+  facet-joint/no_untreated_radiculopathy: >-
+    No untreated nerve pain down an arm or leg (radiculopathy), and no leg pain from nerves when you
+    walk (neurogenic claudication)
+  facet-joint/no_other_pathology: No other cause for the pain was found, like a broken bone, a tumor, or an infection
+  facet-joint/diagnostic_block_relief: >-
+    Before the RFA, at least 2 test nerve blocks, 2 or more weeks apart, that each took away 80% or
+    more of your pain

@@ -1,6 +1,6 @@
 # ADR-0004: Dual frontend — Streamlit demo + Vercel landing page
 
-**Status:** Accepted
+**Status:** Accepted; the Streamlit demo half is superseded by [ADR-0023](0023-phase-4-nextjs-demo-and-deps.md) (the demo is Next.js + FastAPI)
 **Date:** 2026-04-21
 **Supersedes:** Refines baseline blueprint-v2 §4.1 (Streamlit only)
 

@@ -8,7 +8,7 @@ import pytest
 
 from pair.contracts import Checklist, CriterionStatus, Evidence, VariableType, Verdict
 from pair.policies.loader import load_all
-from pair.rules.engine import RuleEngineError, _fits, run_rules
+from pair.rules.engine import RuleEngineError, run_rules, value_fits
 
 MET, UNMET, INSUFFICIENT = CriterionStatus.MET, CriterionStatus.UNMET, CriterionStatus.INSUFFICIENT
 D0 = dt.date(2026, 3, 1)
@@ -364,4 +364,4 @@ def test_non_bool_context_flag_is_an_error(policies: dict[str, Checklist]) -> No
 )
 def test_value_fits_declared_type(var_type: VariableType, value: Any, fits: bool) -> None:
     """Each variable type accepts only its own normalized values."""
-    assert _fits(var_type, value) is fits
+    assert value_fits(var_type, value) is fits

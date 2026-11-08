@@ -8,6 +8,7 @@ import pytest
 
 MUST_BE_IGNORED: list[str] = [
     "CLAUDE.md",
+    "web/AGENTS.md",
     ".claude/TRACKER.md",
     "data/raw/x.csv",
     "data/interim/x.parquet",
@@ -17,6 +18,9 @@ MUST_BE_IGNORED: list[str] = [
     "data/IMR_Determinations.csv",
     "IMR_Determinations_Trend.csv",
     "notebooks/.ipynb_checkpoints/eda-checkpoint.ipynb",
+    "data/demo-cache/manifest.json",
+    "web/public/demo/index.json",
+    "web/public/demo/views/pap-osa-01.json",
 ]
 
 MUST_BE_TRACKABLE: list[str] = [
@@ -26,6 +30,7 @@ MUST_BE_TRACKABLE: list[str] = [
     ".env.example",
     "policies/pap-osa.yaml",
     "tests/fixtures/imr/fake_imr.csv",
+    "web/src/copy/en.json",
 ]
 
 

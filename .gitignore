@@ -9,6 +9,9 @@ data/*
 # ...except the fake, hand-written IMR test fixture (no real rows)
 !tests/fixtures/imr/*.csv
 
+# Demo cache copied into the web app (ADR-0023; commit question is Phase 5)
+web/public/demo/
+
 # --- Secrets ---
 .env
 .env.*
@@ -17,6 +20,7 @@ data/*
 # --- Agent files: private, never committed ---
 CLAUDE.md
 .claude/
+AGENTS.md
 .agent/
 
 # --- Notebooks ---
