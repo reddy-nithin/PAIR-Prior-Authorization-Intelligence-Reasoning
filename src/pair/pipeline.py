@@ -13,7 +13,7 @@ from pathlib import Path
 
 import langextract as lx
 
-from pair.contracts import Checklist, Evidence, Strength, Verdict
+from pair.contracts import Checklist, CriterionStatus, Evidence, Strength, Verdict
 from pair.draft.claims import ClaimPlan, plan_claims
 from pair.draft.letter import WordingResult, word_claims
 from pair.draft.template import LetterTemplate, RenderedLetter, render_letter
@@ -30,6 +30,7 @@ from pair.score.strength import Adjustments, compute_strength
 from pair.verify.conformal import Threshold
 from pair.verify.nli import Verifier
 from pair.verify.pipeline import VerifiedLetter, verify_letter
+from pair.verify.quote import QuotedLetter, quote_flagged
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +158,7 @@ class TrustRun:
         plan: Claim slots and the criteria left out.
         wording: The worded, unverified letter and wording statistics.
         verified: Scores, decisions and verifier metadata.
+        quoted: The verified letter after flagged paraphrases of met criteria became record quotes (ADR-0024).
         rendered: The letter text and the claims kept out of it.
         strength: The strength estimate, or None when no base rate is available.
     """
@@ -164,6 +166,7 @@ class TrustRun:
     plan: ClaimPlan
     wording: WordingResult
     verified: VerifiedLetter
+    quoted: QuotedLetter
     rendered: RenderedLetter
     strength: Strength | None
 
@@ -181,8 +184,11 @@ def run_trust(
     base: BaseEstimate | None = None,
     adjustments: Adjustments | None = None,
     exemplars: Sequence[str] = (),
+    quote_met: bool = True,
 ) -> TrustRun:
     """Run steps 5 to 7 on a finished core run.
+
+    ``quote_met`` turns on ADR-0024: a flagged paraphrase of a met criterion becomes a verbatim record quote.
 
     Raises:
         ValueError: If the core run has no verdict or parsed denial, or is for another checklist.
@@ -193,8 +199,10 @@ def run_trust(
     plan = plan_claims(checklist, core.verdict)
     wording = word_claims(plan.slots, checklist, client, exemplars)
     verified = verify_letter(wording.letter, checklist, notes, core.evidence, verifier, threshold, drafter)
-    rendered = render_letter(verified.letter, checklist, core.denial.denial, template)
+    met = {r.criterion_id for r in core.verdict.results if r.status is CriterionStatus.MET}
+    quoted = quote_flagged(verified.letter, notes, met) if quote_met else QuotedLetter(verified.letter, ())
+    rendered = render_letter(quoted.letter, checklist, core.denial.denial, template)
     strength = None
     if base is not None and adjustments is not None:
         strength = compute_strength(checklist, core.verdict, base, adjustments, flags)
-    return TrustRun(plan, wording, verified, rendered, strength)
+    return TrustRun(plan, wording, verified, quoted, rendered, strength)

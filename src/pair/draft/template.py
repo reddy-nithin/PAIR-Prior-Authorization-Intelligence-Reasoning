@@ -135,7 +135,7 @@ def render_letter(letter: Letter, checklist: Checklist, denial: Denial, template
         )
         if not claims:
             continue
-        shown = [claim for claim in claims if claim.decision in (ClaimDecision.KEEP, None)]
+        shown = [claim for claim in claims if claim.decision in (ClaimDecision.KEEP, ClaimDecision.QUOTE, None)]
         unconfirmed += [claim for claim in claims if claim.decision is ClaimDecision.FLAG]
         dropped += [claim for claim in claims if claim.decision is ClaimDecision.DROP]
         not_evaluated += [claim for claim in shown if claim.decision is None]
@@ -144,7 +144,7 @@ def render_letter(letter: Letter, checklist: Checklist, denial: Denial, template
             continue
         body = [template.policy_quote.format(clause=criterion.clause, source=sources[criterion.source_id])]
         body += [f"{claim.text} {_cite(template, claim)}" for claim in shown]
-        if all(claim.decision is ClaimDecision.KEEP for claim in claims):
+        if all(claim.decision in (ClaimDecision.KEEP, ClaimDecision.QUOTE) for claim in claims):
             body.append(template.conclusion)
         heading = template.headings.get(f"{checklist.id}/{criterion.id}", criterion.text)
         paragraphs.append(f"{template.criterion_heading.format(criterion_text=heading)}\n{' '.join(body)}")

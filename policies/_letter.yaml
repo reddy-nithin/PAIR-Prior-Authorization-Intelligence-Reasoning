@@ -13,10 +13,14 @@ subject: "Re: Request for reconsideration of the denial of {service}{codes}, dat
 opening: >-
   I am asking you to reconsider your decision to deny coverage of {service}.
   Your notice dated {denial_date} gave this reason: "{reason_text}"
+# Checked 2026-10-29: CMS-4201-F (88 FR 22120, April 12, 2023) is effective June 5, 2023 and
+# "applicable to coverage beginning January 1, 2024"; 42 CFR 422.101(b)(1) and (b)(3) require MA
+# plans to comply with NCDs and with the written coverage decisions of local Medicare contractors.
 ma_argument: >-
-  Under the CMS final rule CMS-4201-F, in effect since January 1, 2024, Medicare Advantage plans
-  must follow the coverage criteria in Medicare's national and local coverage determinations
-  (42 CFR 422.101(b)). The coverage criteria for this service are in {policy_sources}.
+  Under the CMS final rule CMS-4201-F, which applies to coverage since January 1, 2024, Medicare
+  Advantage plans must follow Medicare's national coverage determinations and the local coverage
+  determinations of the Medicare contractor for my area (42 CFR 422.101(b)). The coverage criteria
+  for this service are in {policy_sources}.
 policy_intro: "Below, for each requirement, I show what the policy says and where my records show it."
 criterion_heading: "Requirement: {criterion_text}"
 policy_quote: 'The policy says: "{clause}" ({source}).'
@@ -39,8 +43,8 @@ notice: >-
 # so the letter uses these instead. A criterion with no heading falls back to its text.
 headings:
   facet-joint/pain_and_function: >-
-    Moderate to severe neck or low back pain that limits my daily function, measured on a
-    pain or disability scale, with a disability score taken at baseline
+    Neck or low back pain that is moderate or severe and limits my daily life. It was rated on a
+    pain or disability scale, with a score taken before treatment
   facet-joint/duration_and_conservative_care: >-
     Pain for at least 3 months that did not get better with treatments like physical therapy
     or medication
@@ -49,14 +53,15 @@ headings:
   facet-joint/diagnostic_block_relief: >-
     At least 2 diagnostic nerve blocks at least 2 weeks apart, each giving 80% or more pain relief
   home-oxygen/ordered_and_evaluated: >-
-    My treating practitioner ordered and reviewed the oxygen test, and it was done at a time I
-    needed oxygen
-  home-oxygen/qualified_tester: The oxygen test was done by my practitioner or a qualified lab, not by the oxygen supplier
+    My doctor ordered and reviewed the oxygen test, and it was done at a time I needed oxygen
+  home-oxygen/qualified_tester: >-
+    The oxygen test was done by my doctor or a qualified lab, not by the oxygen supplier
   home-oxygen/group1_blood_gas: "Group I: oxygen level at rest on room air of PO2 55 or less, or saturation 88% or less"
   home-oxygen/group2_blood_gas: >-
-    Group II: PO2 56 to 59 or saturation 89%, plus swelling from heart failure, pulmonary
-    hypertension, or a high hematocrit
-  home-oxygen/home_benefit: My practitioner expects oxygen at home to improve my condition
+    Group II: PO2 56 to 59 or saturation 89%. I also have swelling from heart failure, high blood
+    pressure in the lungs, or a high red blood cell count
+  home-oxygen/home_benefit: >-
+    My doctor expects oxygen at home to help my condition
   pap-osa/f2f_visit: An in-person visit with my treating practitioner before the sleep test
   pap-osa/ahi_threshold: >-
     A sleep test with an AHI or RDI of 15 or more, or 5 up to 15 with qualifying symptoms or

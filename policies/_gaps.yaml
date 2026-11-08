@@ -1,9 +1,11 @@
 # Plain-language "what's missing" messages, one pair per criterion (spec §6.7).
 # insufficient: the records don't show the item yet, so say who to ask for what.
+# who: who holds the missing record; the UI groups the gap list by it.
 # unmet: the records show the item doesn't meet the rule. No "raise your chances" path (ADR-0007).
 # Patient-facing text: grade 8 reading level, no dashes as punctuation.
 pap-osa:
   f2f_visit:
+    who: "Your doctor's office"
     insufficient: >-
       Ask your doctor's office for the note from your in-person visit before your sleep test.
       It should show the visit date and that they checked you for sleep apnea.
@@ -11,6 +13,7 @@ pap-osa:
       Your records show the in-person visit happened after your sleep test, and the rule needs it
       before. Ask your doctor whether a new visit and sleep test make sense for you.
   ahi_threshold:
+    who: "The sleep lab that did your sleep test"
     insufficient: >-
       Ask for your full sleep test report with your AHI and the hours of sleep it covered. If your
       AHI is 5 to 14, also ask for notes on sleepiness, mood, memory, insomnia, high blood pressure,
@@ -19,6 +22,7 @@ pap-osa:
       Your sleep test numbers are below what this rule requires. Ask your doctor about a repeat
       test or other treatments for your sleep problem.
   adherence:
+    who: "Your equipment supplier"
     insufficient: >-
       Ask your equipment supplier for the usage report from your PAP machine. It should show
       hours of use per night for 30 days in a row within your first 3 months.
@@ -26,6 +30,7 @@ pap-osa:
       Your machine's report shows less than 4 hours a night on 70% of nights. Ask your doctor
       about mask fit, comfort settings, or other treatment options.
   reevaluation:
+    who: "Your doctor's office"
     insufficient: >-
       Ask your doctor's office for the note from your follow-up visit on or after day 31 after you
       started PAP. It should say whether PAP is helping you.
@@ -34,6 +39,7 @@ pap-osa:
       that shows PAP helps can restart coverage from that date. Ask your doctor what to do next.
 home-oxygen:
   ordered_and_evaluated:
+    who: "Your doctor's office"
     insufficient: >-
       Ask your doctor's office for a note showing they ordered your oxygen test and reviewed the
       result. It should also show the test date and your symptoms that day, or, if the oxygen
@@ -43,6 +49,7 @@ home-oxygen:
       when you needed oxygen (within 2 days before leaving the hospital, or while you had
       symptoms). Ask your doctor whether a new test is needed.
   qualified_tester:
+    who: "The lab or office that did your oxygen test"
     insufficient: >-
       Ask for the oxygen test report. It should show who did the test, such as your doctor's
       office, a hospital, or a lab.
@@ -50,6 +57,7 @@ home-oxygen:
       Your records show the oxygen test was done by the oxygen supplier, which this rule doesn't
       accept. Ask your doctor for a test by their office or a lab.
   group1_blood_gas:
+    who: "The lab or office that did your oxygen test"
     insufficient: >-
       Ask for your oxygen test results taken at rest while breathing room air. They should show
       your PO2 (blood gas) or oxygen saturation number.
@@ -57,13 +65,16 @@ home-oxygen:
       Your resting oxygen level is above this rule's limit. Ask your doctor whether other tests,
       such as during sleep or exercise, apply to you.
   group2_blood_gas:
+    who: "Your doctor's office"
     insufficient: >-
-      If your oxygen level was PO2 56 to 59 or 89%, ask for notes showing swelling from heart
-      failure, pulmonary hypertension, or a high hematocrit.
+      If your oxygen level was PO2 56 to 59 or 89%, ask for notes that show one more problem. That can
+      be swelling from heart failure, high blood pressure in the lungs, or a high red blood cell
+      count.
     unmet: >-
       Your oxygen level or other health findings don't match this rule. Ask your doctor about
       what other tests or treatments fit your situation.
   home_benefit:
+    who: "Your doctor's office"
     insufficient: >-
       Ask your doctor for a note saying that oxygen at home is expected to improve your condition.
     unmet: >-
@@ -71,13 +82,16 @@ home-oxygen:
       why, and what other options there are.
 facet-joint:
   pain_and_function:
+    who: "Your doctor's office"
     insufficient: >-
-      Ask your doctor for notes that rate your pain (0 to 10, or mild, moderate or severe), say it
-      is mainly in your neck or low back, and show a disability score taken before treatment.
+      Ask your doctor for notes that rate your pain from 0 to 10, or as mild, moderate or severe. They
+      should say the pain is mainly in your neck or low back. They should also show a disability score
+      from before treatment.
     unmet: >-
       Your records show pain that is milder than this rule requires, or not mainly in the neck or
       low back. Ask your doctor about other treatments.
   duration_and_conservative_care:
+    who: "Your doctor's office"
     insufficient: >-
       Ask for notes showing how long you have had the pain and which treatments you tried, like
       physical therapy or medicine, and that they didn't work.
@@ -85,13 +99,15 @@ facet-joint:
       Your records show the pain started less than 3 months ago, or other treatments are still
       helping. Ask your doctor what to try next.
   no_untreated_radiculopathy:
+    who: "Your doctor's office"
     insufficient: >-
-      Ask your doctor for a note saying whether you have nerve pain going down an arm or leg, or
-      leg pain when you walk (neurogenic claudication), and if so, how it was treated.
+      Ask your doctor for a note that says whether you have nerve pain down an arm or leg, or leg pain
+      when you walk (neurogenic claudication). If you do, the note should say how it was treated.
     unmet: >-
       Your records show untreated nerve pain going down an arm or leg, or untreated leg pain
       when you walk. Ask your doctor about treating that first, or whether a joint cyst causes it.
   no_other_pathology:
+    who: "Your doctor's office"
     insufficient: >-
       Ask for your exam or imaging notes. They should say no other cause, like a fracture, tumor
       or infection, explains your pain.
@@ -99,6 +115,7 @@ facet-joint:
       Your records show another possible cause for your pain. Ask your doctor about treating that
       cause.
   diagnostic_block_relief:
+    who: "The clinic that did your nerve blocks"
     insufficient: >-
       Ask for the notes from your diagnostic nerve blocks. They should show the date of each of at
       least 2 blocks, each giving 80% or more pain relief, and how long the relief lasted.

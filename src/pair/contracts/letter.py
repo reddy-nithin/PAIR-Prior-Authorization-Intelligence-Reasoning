@@ -18,6 +18,7 @@ class ClaimDecision(StrEnum):
     KEEP = "keep"
     FLAG = "flag"
     DROP = "drop"
+    QUOTE = "quote"  # a flagged paraphrase of a met criterion, replaced by the record sentence verbatim (ADR-0024)
 
 
 class PolicyCitation(ContractModel):

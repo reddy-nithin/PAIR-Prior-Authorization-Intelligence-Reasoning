@@ -265,3 +265,44 @@ def test_sentence_that_already_quotes_its_record_gets_a_short_cite(pap: Checklis
 
     assert rendered.text.count(quote) == 1
     assert template.record_ref.format(doc_id="note-1") in rendered.text
+
+
+@pytest.mark.parametrize("policy_id", ["pap-osa", "home-oxygen", "facet-joint"])
+def test_full_letter_uses_headings_not_criterion_text(
+    policy_id: str, template: LetterTemplate, repo_root: Path
+) -> None:
+    """A letter arguing every criterion of a shipped policy uses headings, never the patient-facing criterion text."""
+    checklist = load_all(repo_root / "policies")[policy_id]
+    record = "Record line for the requirement."
+    claims = [
+        Claim(
+            criterion_id=criterion.id,
+            text="My records show this.",
+            policy_cite=PolicyCitation(source_id=criterion.source_id, quote=criterion.clause),
+            evidence_cite=EvidenceCitation(doc_id="note-1", char_start=0, char_end=len(record), quote=record),
+            score=0.9,
+            decision=ClaimDecision.KEEP,
+        )
+        for criterion in checklist.criteria
+    ]
+    text = render_letter(Letter(policy_id=policy_id, claims=claims), checklist, denial(), template).text
+    assert "ADR" not in text
+    assert text.count("Requirement: ") == len(checklist.criteria)
+    for criterion in checklist.criteria:
+        heading = template.headings[f"{policy_id}/{criterion.id}"]
+        assert f"Requirement: {heading}" in text
+        if criterion.text != heading:
+            assert criterion.text not in text
+
+
+def test_quote_sentence_is_shown_and_counts_like_kept(pap: Checklist, template: LetterTemplate) -> None:
+    """ADR-0024: a QUOTE sentence is in the text, not listed as unconfirmed, and allows the conclusion."""
+    quote = claim(pap, "ahi_threshold", "AHI 18.2 events/hr", 'My records state: "AHI 18.2 events/hr".', ClaimDecision.QUOTE)
+    rendered = render_letter(
+        letter(pap, quote, claim(pap, "f2f_visit", "Seen in sleep clinic on 2026-03-02", "I saw my doctor.")),
+        pap, denial(), template,
+    )  # fmt: skip
+
+    assert 'My records state: "AHI 18.2 events/hr".' in rendered.text
+    assert rendered.unconfirmed == () and rendered.not_evaluated == ()
+    assert rendered.text.count(template.conclusion) == 2

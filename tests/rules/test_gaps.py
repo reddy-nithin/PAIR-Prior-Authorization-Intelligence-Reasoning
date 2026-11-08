@@ -39,6 +39,14 @@ def test_every_criterion_has_both_messages(book: GapBook, policies: dict[str, Ch
                 assert book.message(checklist.id, criterion.id, status)
 
 
+def test_every_criterion_says_who_to_ask(book: GapBook, policies: dict[str, Checklist]) -> None:
+    """Each criterion names who holds the missing record, so the UI can group gaps by it."""
+    for policy_id, checklist in policies.items():
+        for criterion_id in checklist.criterion_ids:
+            who = book.who(policy_id, criterion_id)
+            assert who[0].isupper() and len(who) <= 60
+
+
 def test_messages_are_plain_and_short(book: GapBook) -> None:
     """Patient text: no em/en dashes, at most a few sentences."""
     for message in book.all_messages():
@@ -69,7 +77,7 @@ def test_for_policy_plugs_into_the_engine(book: GapBook, policies: dict[str, Che
 
 GOOD = """
 pap-osa:
-  f2f_visit: {insufficient: "Ask for the visit note.", unmet: "Ask about other options."}
+  f2f_visit: {who: "Your doctor's office", insufficient: "Ask for the visit note.", unmet: "Ask about other options."}
 """
 
 
@@ -83,6 +91,7 @@ def test_small_valid_file_loads(tmp_path: Path, policies: dict[str, Checklist]) 
     """A file covering exactly the policies' criteria loads."""
     book = load_gaps(write(tmp_path, GOOD), small_policies(policies))
     assert book.message("pap-osa", "f2f_visit", CriterionStatus.UNMET) == "Ask about other options."
+    assert book.who("pap-osa", "f2f_visit") == "Your doctor's office"
 
 
 @pytest.mark.parametrize(
@@ -95,6 +104,8 @@ def test_small_valid_file_loads(tmp_path: Path, policies: dict[str, Checklist]) 
         (GOOD.replace("unmet:", "met:"), "unmet"),
         (GOOD.replace("Ask for", "Ask — for"), "dash"),
         (GOOD.replace("unmet:", "note: x, unmet:"), "unknown keys"),
+        (GOOD.replace('who: "Your doctor\'s office", ', ""), "no who"),
+        (GOOD.replace('who: "Your doctor\'s office"', 'who: ""'), "who is empty"),
         ("- not a mapping\n", "mapping"),
         ("pap-osa: [1, 2]\n", "mapping"),
         ("pap-osa:\n  f2f_visit: just text\n", "mapping"),
