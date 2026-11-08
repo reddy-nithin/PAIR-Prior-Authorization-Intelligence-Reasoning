@@ -4,7 +4,23 @@ PAIR helps a patient or caregiver respond to a Medicare Advantage prior authoriz
 
 The language model only reads and words things. A checklist written as code decides whether each requirement is met, and a verifier checks every sentence in the letter against its sources.
 
-**Status:** Phase 1. Typed contracts, three policy checklists quoted from CMS, and a typed loader for real appeal outcomes are in place. The pipeline itself comes next.
+**Try it:** https://pair-appeal-copilot.vercel.app (four made-up demo cases; the online copy can't read your own files)
+
+**Status:** the core engine, the trust layer and the patient demo are built (Phases 2 to 4). Packaging and a fresh-clone `make eval` come next. PAIR is my Build Track entry for UMKC Hack-a-Roo, Fall 2026.
+
+## Results
+
+All numbers come from [RESULTS.md](RESULTS.md) and use synthetic cases only.
+
+| Check | Result |
+|---|---|
+| Denial letter fields read correctly (30 test cases) | 100% |
+| Checklist macro-F1 over met, unmet and insufficient (test / held-out dev) | 0.90 / 0.94 |
+| Extracted evidence that points to a real span in the record | 99.5% |
+| Letter sentences supported by their sources, after the verifier | 153 of 154 (99.4%) |
+| Unsupported sentences that got past the conformal filter | 1 of 47 (0.021, bootstrap upper 0.081) |
+| Appeal outcome model on 2024+ IMR decisions | AUROC 0.722, Brier 0.186 |
+| One demo case, end to end, on a MacBook Air M2 | 15.3 s |
 
 ## Quick start
 
@@ -15,6 +31,8 @@ make setup   # install the pinned environment
 make test    # run the tests with coverage
 make help    # list all targets
 ```
+
+To run the demo on your own machine (Node 24): `make demo-fixture` publishes a one-case synthetic demo, and `make demo` serves it at http://127.0.0.1:3000. Checking your own files needs `make api` with `PAIR_LIVE=1` and an Ollama model; see `make help` and [ADR-0023](docs/decisions/0023-phase-4-nextjs-demo-and-deps.md).
 
 ## Data and privacy
 
