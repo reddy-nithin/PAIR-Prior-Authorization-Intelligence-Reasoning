@@ -97,7 +97,7 @@ Prior authorization (PA) is the insurer's permission slip. Before a plan pays fo
 | Verifier (span check at minimum) | | | Sending letters to insurers |
 | Claim-level conformal filtering | | | |
 | IMR-based strength score, calibrated | | | |
-| Streamlit demo with click-to-source | | | |
+| Web demo (Next.js) with click-to-source (ADR-0023) | | | |
 | Metrics: checklist F1, claim funnel, calibration plot | | | |
 | 3-minute video + pitch deck | | | |
 
@@ -146,7 +146,7 @@ flowchart LR
 | 5 | `draft` | verdict + evidence + denial | `Letter{claims[{text, policy_cite, evidence_cite}]}` | One claim per quote; template skeleton + LLM wording |
 | 6 | `verify` | each claim + its sources | `claim.score, claim.decision` | Span check, then NLI, then conformal threshold |
 | 7 | `score` | denial features + verdict | `Strength{p, interval, abstain}` | IMR model + checklist completeness |
-| 8 | `ui` | everything | Streamlit app | Highlight-to-source from char offsets |
+| 8 | `ui` + `api` + `web/` | everything | `CaseView` JSON → Next.js app (ADR-0023) | Highlight-to-source from char offsets |
 
 ### Policy checklist format (example)
 
@@ -306,10 +306,10 @@ Each method below lists what it is in plain words, then how PAIR uses it.
 | Verifier | Span match + **Bespoke-MiniCheck-7B** (Ollama) | Top open grounding checker; CC BY-NC is fine for research | AlignScore, HHEM-2.1, LLM judge |
 | Conformal | Hand-rolled split conformal (~30 lines) + **MAPIE** or **crepes** (Venn-Abers) | Simple, auditable | |
 | Strength model | scikit-learn, LightGBM | Tabular, fast | |
-| Privacy | Microsoft Presidio | Scrub any free-text upload before logging | |
+| Privacy | Microsoft Presidio + spaCy `en_core_web_lg` | Log filter on the API; upload text is never logged (ADR-0023) | |
 | Synthetic patients | Synthea | Realistic FHIR bundles | |
-| UI | **Streamlit**, designed in Figma first | Fast to build; polished on stage (ADR-0004) | Next.js landing page later |
-| Export | python-docx, WeasyPrint | Letter download | |
+| UI | **Next.js** (TypeScript, Tailwind, Radix) + **FastAPI** backend, designed in Figma first | Design control, keyboard-accessible widgets (ADR-0023, replaces ADR-0004's Streamlit demo) | Vercel deploy in Phase 5 |
+| Export | python-docx, fpdf2 | Letter download | fpdf2 is pure Python; WeasyPrint needs system libs (ADR-0023) |
 | Testing | pytest, pytest-cov | 80% coverage target on `rules/`, `verify/`, `score/` | |
 | Packaging | Docker + docker compose (one service at a time) | One-command run | |
 | Experiment tracking | JSONL run logs + `RESULTS.md` | Lightweight | MLflow only if Phase 2 needs it |
@@ -325,7 +325,7 @@ All three remain options for Phase 2+ if policy count grows.
 
 | Machine | Use | Rule |
 |---|---|---|
-| MacBook Air M2, 8 GB | Dev + live demo (Gemma 4 E4B, Streamlit) | One heavy service at a time; cached demo runs as backup |
+| MacBook Air M2, 8 GB | Dev + demo UI and API (Next.js, FastAPI); live LLM calls go to the lab tunnel (ADR-0011, ADR-0023) | One heavy service at a time; cached demo runs as backup |
 | Lab GPU server, 4× A4000 | MiniCheck-7B, Gemma 26B, eval sweeps | tmux, `nvidia-smi` before runs, results pushed to git |
 | Vertex AI | Synthetic note generation, judge runs | Watch the $50 credit; thinking off |
 
@@ -430,8 +430,10 @@ PAIR/
 │   ├── draft/       # letter templates + LLM wording
 │   ├── verify/      # span check, NLI, conformal
 │   ├── score/       # IMR model + calibration
-│   ├── ui/          # Streamlit app
+│   ├── ui/          # CaseView, demo cache, export, privacy filter
+│   ├── api/         # FastAPI backend for the web demo
 │   └── eval/        # metrics, funnel, plots
+├── web/                          # Next.js demo (ADR-0023)
 ├── tests/
 └── notebooks/                    # EDA only, outputs stripped
 ```
@@ -461,7 +463,7 @@ gantt
     Verifier + conformal filter            :w3b, 2026-10-28, 4d
     IMR strength model + calibration       :w3c, 2026-10-27, 5d
     section Week 4 Ship
-    Figma mockup to Streamlit UI           :w4a, 2026-11-02, 4d
+    Figma mockup to Next.js UI           :w4a, 2026-11-02, 4d
     Eval run + plots                       :w4b, 2026-11-04, 3d
     Video, deck, README                    :w4c, 2026-11-06, 4d
     Submission                             :milestone, 2026-11-09, 0d
