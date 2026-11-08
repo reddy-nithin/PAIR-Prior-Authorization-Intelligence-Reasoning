@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Header } from "@/app/Header";
 import { ShieldIcon } from "@/components/Icons";
-import { apiHealth, DataError, loadIndex, runLive, type CaseRow, type Health } from "@/lib/data";
+import { apiHealth, DataError, LIVE_AVAILABLE, loadIndex, runLive, type CaseRow, type Health } from "@/lib/data";
 import { useLiveStore } from "@/lib/live-store";
 import { copy } from "@/lib/copy";
 import { stepHref } from "@/lib/steps";
@@ -80,7 +80,7 @@ export default function StartPage() {
                   <button className="btn" type="submit" disabled={busy}>{copy.start.run}</button>
                 </form>
               ) : (
-                <p>{copy.start.backendDown}</p>
+                <p>{LIVE_AVAILABLE ? copy.start.backendDown : copy.start.hostedOnly}</p>
               )}
               <p className="sr" aria-live="polite">{status}</p>
               {status ? <p className="note" aria-hidden="true">{status}</p> : null}

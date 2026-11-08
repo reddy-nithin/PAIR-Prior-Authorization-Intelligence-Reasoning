@@ -42,6 +42,7 @@ The baseline plan documents (`docs/blueprint-v2.md`, `docs/insurance-companion.m
 | 0022 | The verifier premise includes the previous sentence after a referring opener | Accepted | 2026-10-29 |
 | 0023 | Phase 4 demo in Next.js with a FastAPI backend, and its dependencies | Accepted | 2026-10-29 |
 | 0024 | Quote the record sentence when a paraphrase of a met requirement is flagged | Accepted | 2026-10-29 |
+| 0025 | Put the cached demo on Vercel for Hack-a-Roo | Accepted | 2026-11-08 |
 
 ## Template
 
