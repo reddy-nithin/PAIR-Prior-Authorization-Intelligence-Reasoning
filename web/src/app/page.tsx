@@ -3,12 +3,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Header } from "@/app/Header";
-import { ShieldIcon } from "@/components/Icons";
-import { apiHealth, DataError, LIVE_AVAILABLE, loadIndex, runLive, type CaseRow, type Health } from "@/lib/data";
+import { Footer, Header } from "@/app/Header";
+import { LockIcon, RightIcon, UploadIcon } from "@/components/Icons";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { StatusView } from "@/types/caseview";
+import { apiHealth, DataError, LIVE_AVAILABLE, loadIndex, REPO_URL, runLive, type CaseRow, type Health } from "@/lib/data";
 import { useLiveStore } from "@/lib/live-store";
 import { copy } from "@/lib/copy";
 import { stepHref } from "@/lib/steps";
+
+/** Overall verdict words from the demo index, mapped to tag colours. */
+const OVERALL: Record<string, Pick<StatusView, "status" | "icon">> = {
+  Met: { status: "met", icon: "check" },
+  "Not met": { status: "unmet", icon: "cross" },
+  "Not enough information": { status: "insufficient", icon: "question" },
+};
 
 /** Step 1: upload your own papers (live, when the local checker is on) or open a demo case. */
 export default function StartPage() {
@@ -51,67 +60,84 @@ export default function StartPage() {
     }
   };
 
+  const accept = ".pdf,.txt,.md,.png,.jpg,.jpeg,.heic,.docx,text/plain,application/pdf,image/*";
+
+  const ownPapers = (
+    <section className="card" aria-labelledby="own-h">
+      <h2 id="own-h">{copy.start.ownFiles}</h2>
+      {health === undefined ? (
+        <p className="note">{copy.start.checking}</p>
+      ) : liveOn ? (
+        <form className="stack" onSubmit={submit} aria-busy={busy}>
+          <div className="drop">
+            <div className="field">
+              <span className="icon-dot"><UploadIcon /></span>
+              <label htmlFor="denial">{copy.start.uploadDenial}<span>{copy.start.uploadHint}</span></label>
+              <input id="denial" ref={denialRef} type="file" accept={accept} />
+            </div>
+            <div className="field">
+              <span className="icon-dot"><UploadIcon /></span>
+              <label htmlFor="records">{copy.start.uploadRecords}<span>{copy.start.uploadHint}</span></label>
+              <input id="records" ref={recordsRef} type="file" multiple accept={accept} />
+            </div>
+          </div>
+          <p><button className="btn" type="submit" disabled={busy}>{copy.start.run}</button></p>
+        </form>
+      ) : (
+        <div className="banner">
+          <LockIcon />
+          <p>
+            {LIVE_AVAILABLE ? copy.start.backendDown : copy.start.hostedOnly}
+            {LIVE_AVAILABLE ? null : <> <a href={REPO_URL} target="_blank" rel="noopener noreferrer">{copy.start.hostedLink}</a></>}
+          </p>
+        </div>
+      )}
+      <p className="sr" aria-live="polite">{status}</p>
+      {status ? <p className="note" aria-hidden="true">{status}</p> : null}
+      {error ? <p role="alert" className="error">{error}</p> : null}
+      <p className="note">{copy.start.promise}</p>
+    </section>
+  );
+
+  const demos = (
+    <section className="stack" aria-labelledby="demo-h">
+      <h2 id="demo-h">{copy.start.orDemo}</h2>
+      {cases === null ? (
+        <p className="note">{copy.common.loading}</p>
+      ) : cases.length ? (
+        <ul className="cases">
+          {cases.map((row) => (
+            <li key={row.case_id}>
+              <Link className="case" href={stepHref(row.case_id, "why")}>
+                <span className="t">
+                  <b>{row.service ?? row.case_id}</b>
+                  <span className="s">{row.policy_title}</span>
+                  {row.overall ? <StatusBadge status={{ ...(OVERALL[row.overall] ?? OVERALL["Not enough information"]), label: row.overall } as StatusView} /> : null}
+                </span>
+                <RightIcon />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="note">{copy.start.noDemo}</p>
+      )}
+      <p className="note">{copy.start.demoNote}</p>
+    </section>
+  );
+
   return (
     <>
       <Header />
-      <div className="wrap shell single">
+      <div className="col">
         <main id="main" tabIndex={-1}>
           <div className="stack">
-            <p className="eyebrow">{copy.start.eyebrow}</p>
+            <p className="eyebrow">{copy.common.tagline}</p>
             <h1>{copy.start.headline}</h1>
             <p className="lede">{copy.start.intro}</p>
           </div>
-          <div className="paths">
-            <section className="panel" aria-labelledby="own-h">
-              <h2 id="own-h">{copy.start.ownFiles}</h2>
-              {health === undefined ? (
-                <p className="note">{copy.start.checking}</p>
-              ) : liveOn ? (
-                <form className="stack" onSubmit={submit} aria-busy={busy}>
-                  <div className="field">
-                    <label htmlFor="denial"><b>{copy.start.uploadDenial}</b></label>
-                    <input id="denial" ref={denialRef} type="file" accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.heic,.docx,text/plain,application/pdf,image/*" />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="records"><b>{copy.start.uploadRecords}</b></label>
-                    <input id="records" ref={recordsRef} type="file" multiple accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.heic,.docx,text/plain,application/pdf,image/*" />
-                  </div>
-                  <p className="note">{copy.start.uploadHint}</p>
-                  <button className="btn" type="submit" disabled={busy}>{copy.start.run}</button>
-                </form>
-              ) : (
-                <p>{LIVE_AVAILABLE ? copy.start.backendDown : copy.start.hostedOnly}</p>
-              )}
-              <p className="sr" aria-live="polite">{status}</p>
-              {status ? <p className="note" aria-hidden="true">{status}</p> : null}
-              {error ? <p role="alert" className="error">{error}</p> : null}
-            </section>
-            <section className="panel" aria-labelledby="demo-h">
-              <h2 id="demo-h">{copy.start.orDemo}</h2>
-              {cases === null ? (
-                <p className="note">{copy.common.loading}</p>
-              ) : cases.length ? (
-                <ul className="cases">
-                  {cases.map((row) => (
-                    <li key={row.case_id}>
-                      <Link className="case" href={stepHref(row.case_id, "why")}>
-                        <span>
-                          <b>{row.service ?? row.case_id}</b>
-                          <br />
-                          <span className="note">{row.policy_title}</span>
-                        </span>
-                        {row.overall ? <span className="chip">{row.overall}</span> : null}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="note">{copy.start.noDemo}</p>
-              )}
-              <p className="note">{copy.start.demoNote}</p>
-            </section>
-          </div>
-          <div className="promise"><ShieldIcon /><p>{copy.start.promise}</p></div>
+          {LIVE_AVAILABLE ? <>{ownPapers}{demos}</> : <>{demos}{ownPapers}</>}
+          <Footer />
         </main>
       </div>
     </>

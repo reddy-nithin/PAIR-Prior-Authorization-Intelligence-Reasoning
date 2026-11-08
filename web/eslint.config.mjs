@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vercel prebuilt output (ADR-0025)
+    ".vercel/**",
   ]),
 ]);
 

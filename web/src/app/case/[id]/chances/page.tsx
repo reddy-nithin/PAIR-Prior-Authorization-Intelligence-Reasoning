@@ -12,7 +12,6 @@ export default function ChancesPage() {
   return (
     <>
       <div className="stack">
-        <p className="eyebrow">{copy.common.steps.chances}</p>
         <h1>{copy.chances.title}</h1>
       </div>
       {s == null ? (

@@ -40,9 +40,9 @@ export function GapChecklist({ caseId, groups, persist }: { caseId: string; grou
   return (
     <>
       {groups.map((group) => (
-        <section className="who" key={group.who}>
+        <section className="card who" key={group.who}>
           <h2 className="who-h">
-            <PersonIcon />
+            <span className="icon-dot"><PersonIcon /></span>
             {fill(copy.missing.askWho, { who: group.who })}
           </h2>
           {group.items.map((item) => {
@@ -53,7 +53,7 @@ export function GapChecklist({ caseId, groups, persist }: { caseId: string; grou
                 <label htmlFor={id}>
                   <b className="h">{item.heading}</b>
                   <span>{item.message}</span>
-                  <span><StatusBadge status={item.status} /></span>
+                  <StatusBadge status={item.status} />
                 </label>
               </div>
             );
