@@ -105,6 +105,14 @@ Seven short screens, written at about an 8th grade reading level. Every screen w
 6. **Your chances**: a range out of 100, or "talk to a person first" with free help links
 7. **Download**: Word and PDF, plus a short checklist before you send it
 
+## Poster
+
+PAIR's poster for the UMKC Hack-a-Roo Fall 2026 Build Track (48 x 36 in). Full PDF: [docs/poster/PAIR_poster_final.pdf](docs/poster/PAIR_poster_final.pdf).
+
+<p align="center">
+  <img src="docs/img/poster-preview.jpg" alt="PAIR poster: the problem, what PAIR does, how the AI reads while fixed rules decide, the sentence fact-check, calibrated win chances, results, limitations and impact." width="100%">
+</p>
+
 ## Quick start
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
